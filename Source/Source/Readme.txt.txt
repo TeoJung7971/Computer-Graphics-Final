@@ -1,1 +1,0 @@
-exe files and original source codes are required
