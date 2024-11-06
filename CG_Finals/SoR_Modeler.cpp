@@ -1,4 +1,4 @@
-#include <GL/glut.h>
+﻿#include <GL/glut.h>
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -20,7 +20,7 @@ std::vector<Point3D> revolvedPoints;   // Revolved points for the surface
 int degree = 0;                        // Degree for revolution
 bool degreeInputMode = false;          // Degree input mode flag
 std::string degreeInput = "";          // Temporary string for degree input
-int windowWidth = 500, windowHeight = 500; // Window dimensions
+GLsizei windowWidth = 500, windowHeight = 500; // Window dimensions
 bool resultShown = false;               // Flag to track if revolution result is shown
 
 // Function to add a 2D point on mouse click
@@ -190,9 +190,13 @@ void mouseCallback(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         if (resultShown) reset();  // Reset previous result on new click
 
-        float glX = (x - windowWidth / 2) / (windowWidth / 2.0f);
-        float glY = (windowHeight / 2 - y) / (windowHeight / 2.0f);
+        //수정 필요
+        //window 크기 변경 시 비율도 함께 조정되어야 함
+        float glX = (x - windowWidth / 2) / (windowWidth / 4.0f);
+        float glY = (windowHeight / 2 - y) / (windowHeight / 4.0f);
+
         addPoint(glX, glY);
+
         glutPostRedisplay();
     }
 }
@@ -212,13 +216,15 @@ void menuCallback(int option) {
 
 // Resize function to maintain aspect ratio
 void reshape(int w, int h) {
-    windowWidth = w;
-    windowHeight = h;
+    
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(45.0, (float)w / h, 1.0, 100.0);
     glMatrixMode(GL_MODELVIEW);
+
+    windowWidth = w;
+    windowHeight = h;
 }
 
 // Initialization of OpenGL
@@ -239,6 +245,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboardCallback);
     glutMouseFunc(mouseCallback);
     glutReshapeFunc(reshape);
+    //glutReshapeFunc(winReshapeFcn);
 
     // Creating a menu with options to set the degree for revolution and reset the screen
     glutCreateMenu(menuCallback);
