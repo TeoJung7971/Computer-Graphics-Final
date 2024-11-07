@@ -1,4 +1,4 @@
-﻿#include <GL/glut.h>
+#include <GL/glut.h>
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -99,7 +99,7 @@ void drawAxes() {
 // Function to render initial points
 void renderInitialPoints() {
     glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
-    glPointSize(5.0f);
+    glPointSize(6.0f);
     glBegin(GL_POINTS);
     for (const auto& p : initialPoints) {
         glVertex3f(p.x, p.y, p.z);
@@ -109,8 +109,8 @@ void renderInitialPoints() {
 
 // Function to render revolved points only
 void renderRevolvedPoints() {
-    glColor3f(1.0f, 0.0f, 0.0f); // Deep blue color for revolved points
-    glPointSize(3.0f);
+    glColor3f(1.0f, 0.0f, 0.0f); // Red color for revolved points
+    glPointSize(5.0f);
     glBegin(GL_POINTS);
     for (const auto& p : revolvedPoints) {
         glVertex3f(p.x, p.y, p.z);
@@ -141,18 +141,17 @@ void display() {
         glPushMatrix();
         glLoadIdentity();
 
-        // Light gray background box
-        glColor3f(0.9f, 0.9f, 0.9f);
-        glRectf(windowWidth / 2 - 150, windowHeight / 2 - 30, windowWidth / 2 + 150, windowHeight / 2 + 30);
-
-        // White input box inside
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glRectf(windowWidth / 2 - 50, windowHeight / 2 - 10, windowWidth / 2 + 50, windowHeight / 2 + 10);
-
+        // Render prompt text at the top-right
         glColor3f(0.0f, 0.0f, 0.0f);
-        glRasterPos2f(windowWidth / 2 - 130, windowHeight / 2 - 5);
-        std::string displayText = "Enter a degree: " + degreeInput + ".";
+        glRasterPos2f(windowWidth - 200, windowHeight - 30);
+        std::string displayText = "Enter a degree: ";
         for (char c : displayText) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+        }
+
+        // Render the current input
+        glRasterPos2f(windowWidth - 200, windowHeight - 60);
+        for (char c : degreeInput) {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
         }
 
@@ -182,6 +181,7 @@ void keyboardCallback(unsigned char key, int x, int y) {
         else if (isdigit(key)) {
             degreeInput += key;
         }
+        glutPostRedisplay();
     }
 }
 
@@ -190,11 +190,14 @@ void mouseCallback(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         if (resultShown) reset();  // Reset previous result on new click
 
-        //수정 필요
-        //window 크기 변경 시 비율도 함께 조정되어야 함
         float glX = (x - windowWidth / 2) / (windowWidth / 4.0f);
         float glY = (windowHeight / 2 - y) / (windowHeight / 4.0f);
 
+        if (windowWidth> 600) {
+            glX = (2.0f * x / windowWidth - 1.0f) * (windowWidth / 500.0f);
+            glY = (1.0f - 2.0f * y / windowHeight) * (windowHeight / 500.0f);
+        }
+            
         addPoint(glX, glY);
 
         glutPostRedisplay();
@@ -216,7 +219,6 @@ void menuCallback(int option) {
 
 // Resize function to maintain aspect ratio
 void reshape(int w, int h) {
-    
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -245,7 +247,6 @@ int main(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboardCallback);
     glutMouseFunc(mouseCallback);
-    //glutReshapeFunc(winReshapeFcn);
 
     // Creating a menu with options to set the degree for revolution and reset the screen
     glutCreateMenu(menuCallback);
