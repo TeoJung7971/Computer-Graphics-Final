@@ -27,5 +27,8 @@
     <ClCompile Include="3dmazebasic.cpp">
       <Filter>Source Files\Reference</Filter>
     </ClCompile>
+    <ClCompile Include="3dmazemodified.cpp">
+      <Filter>Source Files\Reference</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

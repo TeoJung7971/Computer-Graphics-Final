@@ -27,7 +27,7 @@ const int map[17][17] = {
 };
 int mapi, mapj, flag = 0;
 float gx = 7.5;
-float gz = -0.5;
+float gz = -1;
 float angle = 0;
 int treasurex = 0;
 int treasurez = 0;
@@ -111,6 +111,7 @@ void init()
 
 }
 
+//check the angle of the camera -> viewing traansformation?
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -119,9 +120,9 @@ void display()
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
     double aspect = (double)viewport[2] / (double)viewport[3];
-    gluPerspective(45, aspect, 0.2, 100);
+    gluPerspective(40, aspect, 0.2, 10);
 
-    gluLookAt(gx, 5, gz, gx + sin(angle), 2, gz - cos(angle), 0, 1, 0);
+    gluLookAt(gx, 5, gz, gx + sin(angle), 0, gz - cos(angle), 0, 1, 0);
 
 
     glMatrixMode(GL_MODELVIEW);
