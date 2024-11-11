@@ -145,7 +145,7 @@ void drawAxes() {
 // Function to render initial points
 void renderInitialPoints() {
     glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
-    glPointSize(6.0f);
+    glPointSize(8.0f);
     glBegin(GL_POINTS);
     for (const auto& p : initialPoints) {
         glVertex3f(p.x, p.y, p.z);
@@ -156,8 +156,8 @@ void renderInitialPoints() {
 // Function to render revolved points as a wireframe and points
 void renderWireframe() {
     // Render points
-    glColor3f(0.0f, 1.0f, 0.0f); // Green color for points
-    glPointSize(4.0f); // Increase point size
+    glColor3f(1.0f, 0.2f, 0.0f); // Green color for points
+    glPointSize(7.0f); // 
     glBegin(GL_POINTS);
     for (const auto& p : revolvedPoints) {
         glVertex3f(p.x, p.y, p.z);
@@ -165,7 +165,7 @@ void renderWireframe() {
     glEnd();
 
     // Render wireframe
-    glColor3f(1.0f, 0.0f, 0.0f); // Red color for wireframe
+    glColor3f(0.1f, 0.1f, 0.1f); // Red color for wireframe
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
@@ -330,14 +330,14 @@ void reshape(int w, int h) {
 // Main function
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
     glutInitWindowSize(windowWidth, windowHeight);
     glutCreateWindow("Surface of Revolution Modeler");
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glPointSize(6.0f);
+    glPointSize(8.0f);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
