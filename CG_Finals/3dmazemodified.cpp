@@ -89,9 +89,9 @@ void generatemap() {
     for (int mapi = 0; mapi < 17; ++mapi) {
         for (int mapj = 0; mapj < 17; ++mapj) {
             if ((mapi + mapj) % 2 == 0)
-                glColor3ub(0, 102, 0);
+                glColor3ub(0, 100, 0);
             else
-                glColor3ub(0, 153, 0);
+                glColor3ub(0, 130, 0);
 
             if (map[mapi][mapj] == 1) {
                 glPushMatrix();
@@ -116,8 +116,10 @@ void generatemap() {
 
 void init() {
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_LIGHT0);
-    glEnable(GL_LIGHTING);
+
+    //It's so confusing...
+    //glEnable(GL_LIGHT0);
+    //glEnable(GL_LIGHTING);
     glEnable(GL_NORMALIZE);
     glEnable(GL_COLOR_MATERIAL);
     glClearColor(1, 1, 1, 1);
@@ -133,7 +135,7 @@ void display() {
     // Set up the projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(70, (double)windowWidth / (double)windowHeight, 0.1, 100);
+    gluPerspective(80, (double)windowWidth / (double)windowHeight, 0.1, 100);
 
     // Set up the camera
     gluLookAt(gx, 0.5, gz, gx + sin(angle), 0.5, gz - cos(angle), 0, 1, 0);
@@ -143,13 +145,16 @@ void display() {
     glLoadIdentity();
 
     // Draw the maze
+    //Maze rendering: apply hidden surface removal algorithm
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     generatemap();
 
     // Draw the OBJ model if not found
     if (!objFound) {
         glPushMatrix();
         glTranslatef(objX, -0.35f, objZ);
-        glColor3f(1.0f, 0.0f, 0.0f); // Color of the OBJ
+        glColor3f(1.0f, 0.3f, 0.0f); // Color of the OBJ
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glBegin(GL_TRIANGLES);
         for (size_t i = 0; i < obj_faces.size(); i += 3) {
             unsigned int vi1 = obj_faces[i] * 3;
@@ -165,6 +170,7 @@ void display() {
     }
 
     // Display "You won!" message if the object is found
+    //why the window (or maybe the maze model) become darker?
     if (objFound) {
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_LIGHTING);
@@ -208,10 +214,10 @@ void specialkeys(int key, int x, int y) {
             nz += fraction * cos(angle);
             break;
         case GLUT_KEY_LEFT:
-            angle -= M_PI / 180;
+            angle -= 3.14 / 180;
             break;
         case GLUT_KEY_RIGHT:
-            angle += M_PI / 180;
+            angle += 3.14 / 180;
             break;
         }
     }
@@ -230,7 +236,7 @@ void specialkeys(int key, int x, int y) {
     float dz = gz - objZ;
     float distance = sqrt(dx * dx + dz * dz);
 
-    if (distance < 0.5f) {
+    if (distance < 0.3f) {
         objFound = true;
     }
 
