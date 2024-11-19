@@ -184,7 +184,9 @@ void display() {
         glPushMatrix();
         glLoadIdentity();
 
-        glColor3f(0, 0, 0);
+        //text color is white
+        //scaling the font!
+        glColor3f(1, 1, 1);
         renderBitmapString(windowWidth / 2 - 50, windowHeight / 2, GLUT_BITMAP_HELVETICA_18, "You won!");
 
         glPopMatrix();
@@ -201,7 +203,7 @@ void display() {
 void specialkeys(int key, int x, int y) {
     float nx = gx;
     float nz = gz;
-    float fraction = 0.05f;
+    float fraction = 0.06f;
 
     if (!objFound) {
         switch (key) {
@@ -236,7 +238,9 @@ void specialkeys(int key, int x, int y) {
     float dz = gz - objZ;
     float distance = sqrt(dx * dx + dz * dz);
 
-    if (distance < 0.3f) {
+    //set properly for the size of the objects and the shape
+    //Now, it needs more than 0.5 
+    if (distance < 0.8f) {
         objFound = true;
     }
 
