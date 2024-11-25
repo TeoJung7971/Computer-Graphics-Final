@@ -16,6 +16,9 @@
     <Filter Include="Source Files\Reference">
       <UniqueIdentifier>{6a313231-8390-45de-8054-65bdb5ada91e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Working">
+      <UniqueIdentifier>{cf4aec06-4bb6-416f-a8c3-3d914093d579}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoR_Modeler.cpp">
@@ -30,8 +33,14 @@
     <ClCompile Include="3dmazemodified.cpp">
       <Filter>Source Files\Reference</Filter>
     </ClCompile>
+    <ClCompile Include="3dmaze_events.cpp">
+      <Filter>Source Files\Working</Filter>
+    </ClCompile>
     <ClCompile Include="SoR_Modeler_3.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoR_Modeler_4.cpp">
+      <Filter>Source Files\Working</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
