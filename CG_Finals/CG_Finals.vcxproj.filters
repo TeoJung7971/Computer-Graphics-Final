@@ -33,14 +33,27 @@
     <ClCompile Include="3dmazemodified.cpp">
       <Filter>Source Files\Reference</Filter>
     </ClCompile>
-    <ClCompile Include="3dmaze_events.cpp">
-      <Filter>Source Files\Working</Filter>
-    </ClCompile>
     <ClCompile Include="SoR_Modeler_3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SoR_Modeler_4.cpp">
       <Filter>Source Files\Working</Filter>
     </ClCompile>
+    <ClCompile Include="3dmaze_events.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3dmaze_events_hsr.cpp">
+      <Filter>Source Files\Working</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="brick_texture.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
