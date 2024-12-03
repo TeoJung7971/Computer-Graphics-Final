@@ -1,4 +1,4 @@
-﻿#define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <GL/glut.h>
 #include <vector>
@@ -8,13 +8,13 @@
 #include <ctime>
 #include <string>
 
-//Point 저장을 위한 구조체
+// Structure for storing points
 struct Point3D {
     float x, y, z;
 };
 
-//전역 변수 선언
-std::vector<Point3D> initialPoints;    // 입력받은 Point
+// Global variables
+std::vector<Point3D> initialPoints;    // Input points
 std::vector<Point3D> revolvedPoints;   // Revolved points for the surface
 std::vector<Point3D> normals;          // Normals for each vertex
 std::vector<unsigned int> indices;     // Indices for constructing polygons
@@ -28,16 +28,21 @@ bool resultShown = false;              // Flag to track if revolution result is 
 
 double cameraDistance = 5.0;           // Camera distance for zooming
 
-// Rendering mode enumeration -> enum func 참조
+// Rendering mode enumeration
 enum RenderMode { WIREFRAME, SURFACE };
 RenderMode renderMode = WIREFRAME;     // Current rendering mode
+
+// Variables for rotation
+float angle = 0.0f;                    // Rotation angle
+int moving = 0;
+int startX = 0;                        // Initial X position when dragging
 
 // Function to add a 2D point on mouse click
 void addPoint(float x, float y) {
     initialPoints.push_back({ x, y, 0.0f });
 }
 
-// Reset|초기화 함수
+// Reset function
 void reset() {
     initialPoints.clear();
     revolvedPoints.clear();
@@ -47,11 +52,12 @@ void reset() {
     degree = 0;
     degreeInputMode = false;
     resultShown = false;
-    cameraDistance = 5.0; 
-    renderMode = WIREFRAME; 
+    cameraDistance = 5.0;
+    renderMode = WIREFRAME;
+    angle = 0.0f; // Reset rotation angle
 }
 
-// 파일 이름 생성 함수
+// Function to generate a unique filename
 std::string generateUniqueFilename() {
     std::ostringstream filename;
     filename << "revolved_object_" << std::time(nullptr) << ".obj";
@@ -100,12 +106,12 @@ void revolvePoints() {
             int currentNextJ = i * pointsPerRing + nextJ;
             int nextNextJ = currentNextJ + pointsPerRing;
 
-            // Corrected Triangle 1
+            // Triangle 1
             indices.push_back(current);
             indices.push_back(currentNextJ);
             indices.push_back(next);
 
-            // Corrected Triangle 2
+            // Triangle 2
             indices.push_back(currentNextJ);
             indices.push_back(nextNextJ);
             indices.push_back(next);
@@ -197,26 +203,29 @@ void saveOBJFile() {
 
 // Function to draw X, Y, Z axes spanning the screen
 void drawAxes() {
+    glDisable(GL_LIGHTING); // Disable lighting for axes
     glColor3f(0.0f, 0.0f, 0.0f); // Black color for axes
+
     glBegin(GL_LINES);
 
     // X-axis
-    glVertex3f(-2.0f, 0.0f, 0.0f);
-    glVertex3f(2.0f, 0.0f, 0.0f);
+    glVertex3f(-1000.0f, 0.0f, 0.0f);
+    glVertex3f(1000.0f, 0.0f, 0.0f);
 
     // Y-axis
-    glVertex3f(0.0f, -2.0f, 0.0f);
-    glVertex3f(0.0f, 2.0f, 0.0f);
+    glVertex3f(0.0f, -1000.0f, 0.0f);
+    glVertex3f(0.0f, 1000.0f, 0.0f);
 
     // Z-axis
-    glVertex3f(0.0f, 0.0f, -2.0f);
-    glVertex3f(0.0f, 0.0f, 2.0f);
+    glVertex3f(0.0f, 0.0f, -1000.0f);
+    glVertex3f(0.0f, 0.0f, 1000.0f);
 
     glEnd();
 }
 
 // Function to render initial points
 void renderInitialPoints() {
+    glDisable(GL_LIGHTING); // Disable lighting for initial points
     glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
     glPointSize(8.0f);
     glBegin(GL_POINTS);
@@ -228,48 +237,65 @@ void renderInitialPoints() {
 
 // Function to render the model based on the current rendering mode
 void renderModel() {
-    // Render points
-    glColor3f(1.0f, 0.2f, 0.0f); // Color for points
+    if (renderMode == SURFACE) {
+        // Enable lighting for surface rendering
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+
+        glShadeModel(GL_FLAT); // Use flat shading
+
+        // Render surface
+        glColor3f(1.0f, 0.0f, 0.0f); // Surface color (same as Code 1)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
+        glNormalPointer(GL_FLOAT, 0, &normals[0]);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+
+        // Disable lighting after rendering
+        glDisable(GL_LIGHT0);
+        glDisable(GL_LIGHTING);
+
+        // Render wireframe on top
+        glColor3f(0.0f, 0.0f, 0.0f); // Black color for wireframe
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        // Enable polygon offset to avoid z-fighting
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glPolygonOffset(-1.0f, -1.0f);
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glDisableClientState(GL_VERTEX_ARRAY);
+
+        glDisable(GL_POLYGON_OFFSET_LINE);
+    }
+    else if (renderMode == WIREFRAME) {
+        glDisable(GL_LIGHTING); // Disable lighting for wireframe
+        // Render wireframe
+        glColor3f(0.0f, 0.0f, 0.0f); // Black color for wireframe
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glDisableClientState(GL_VERTEX_ARRAY);
+    }
+
+    // Render points on top
+    glDisable(GL_LIGHTING); // Disable lighting for points
+    glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
     glPointSize(7.0f);
     glBegin(GL_POINTS);
     for (const auto& p : revolvedPoints) {
         glVertex3f(p.x, p.y, p.z);
     }
     glEnd();
-
-    if (renderMode == WIREFRAME) {
-        // Render wireframe
-        glColor3f(0.1f, 0.1f, 0.1f); // Color for wireframe
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else if (renderMode == SURFACE) {
-        // Render surface with lighting
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        glEnable(GL_COLOR_MATERIAL);
-        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-
-        GLfloat light_pos[] = { 0.0f, 5.0f, 5.0f, 1.0f };
-        glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
-
-        glColor3f(0.8f, 0.8f, 0.8f); // Color for surface
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
-    glNormalPointer(GL_FLOAT, 0, &normals[0]);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-
-    // Disable lighting after rendering
-    if (renderMode == SURFACE) {
-        glDisable(GL_COLOR_MATERIAL);
-        glDisable(GL_LIGHT0);
-        glDisable(GL_LIGHTING);
-    }
 
     // Reset polygon mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -282,7 +308,7 @@ void display() {
     // Set up perspective projection for 3D rendering
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(30.0, (double)windowWidth / (double)windowHeight, 0.1, 100.0);
+    gluPerspective(30.0, (double)windowWidth / (double)windowHeight, 0.1, 1000.0); // Increase far clipping plane
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -290,7 +316,15 @@ void display() {
         0.0, 0.0, 0.0,   // look at position
         0.0, 1.0, 0.0);  // up vector
 
+    // Draw axes without applying model transformations
+    glDisable(GL_LIGHTING); // Disable lighting for axes
     drawAxes();
+
+    // Now apply model transformations
+    glPushMatrix();
+    if (resultShown) {
+        glRotatef(angle, 0.0f, 1.0f, 0.0f);
+    }
 
     if (!resultShown) {
         renderInitialPoints();
@@ -298,6 +332,8 @@ void display() {
     else {
         renderModel();
     }
+
+    glPopMatrix(); // Restore modelview matrix
 
     // Displaying degree input box if in input mode
     if (degreeInputMode) {
@@ -308,6 +344,8 @@ void display() {
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
+
+        glDisable(GL_LIGHTING); // Disable lighting for text rendering
 
         // Render prompt text at the top-right
         glColor3f(0.0f, 0.0f, 0.0f);
@@ -339,11 +377,13 @@ void display() {
 void keyboardCallback(unsigned char key, int x, int y) {
     if (degreeInputMode) {
         if (key == 13 || key == 10) { // Enter key
-            degree = std::stoi(degreeInput);
-            degreeInputMode = false;
-            revolvePoints();
-            saveOBJFile();
-            glutPostRedisplay();
+            if (!degreeInput.empty()) {
+                degree = std::stoi(degreeInput);
+                degreeInputMode = false;
+                revolvePoints();
+                saveOBJFile();
+                glutPostRedisplay();
+            }
         }
         else if (key == 8 || key == 127) { // Backspace key
             if (!degreeInput.empty()) degreeInput.pop_back();
@@ -359,31 +399,41 @@ void keyboardCallback(unsigned char key, int x, int y) {
 void mouseCallback(int button, int state, int x, int y) {
     if (degreeInputMode) return; // Ignore mouse events during degree input
 
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        // If result is shown, reset for new input
-        if (resultShown) {
-            reset();
+    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            if (!resultShown) {
+                // Read the projection and modelview matrix
+                GLdouble modelview[16], projection[16];
+                GLint viewport[4];
+                glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+                glGetDoublev(GL_PROJECTION_MATRIX, projection);
+                glGetIntegerv(GL_VIEWPORT, viewport);
+
+                // Get the window Z position (winZ) at world Z=0
+                double winX, winY, winZ;
+                gluProject(0.0, 0.0, 0.0, modelview, projection, viewport, &winX, &winY, &winZ);
+
+                // Convert window coordinates to OpenGL world coordinates
+                GLdouble posX, posY, posZ;
+                GLint realY = viewport[3] - y - 1; // Invert Y coordinate
+
+                gluUnProject((GLdouble)x, (GLdouble)realY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+
+                addPoint((float)posX, (float)posY);
+                glutPostRedisplay();
+            }
+            else {
+                // Begin rotation
+                moving = 1;
+                startX = x;
+            }
         }
-
-        // Read the projection and modelview matrix
-        GLdouble modelview[16], projection[16];
-        GLint viewport[4];
-        glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-        glGetDoublev(GL_PROJECTION_MATRIX, projection);
-        glGetIntegerv(GL_VIEWPORT, viewport);
-
-        // Get the window Z position (winZ) at world Z=0
-        double winX, winY, winZ;
-        gluProject(0.0, 0.0, 0.0, modelview, projection, viewport, &winX, &winY, &winZ);
-
-        // Convert window coordinates to OpenGL world coordinates
-        GLdouble posX, posY, posZ;
-        GLint realY = viewport[3] - y - 1; // Invert Y coordinate
-
-        gluUnProject((GLdouble)x, (GLdouble)realY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-
-        addPoint((float)posX, (float)posY);
-        glutPostRedisplay();
+        else if (state == GLUT_UP) {
+            if (resultShown) {
+                // End rotation
+                moving = 0;
+            }
+        }
     }
     else if ((button == 3) || (button == 4)) // Mouse wheel event (requires freeglut)
     {
@@ -396,6 +446,15 @@ void mouseCallback(int button, int state, int x, int y) {
         else { // Scroll down
             cameraDistance += 0.5;
         }
+        glutPostRedisplay();
+    }
+}
+
+// Motion callback function for mouse movement
+void motionCallback(int x, int y) {
+    if (moving) {
+        angle += (x - startX);
+        startX = x;
         glutPostRedisplay();
     }
 }
@@ -436,6 +495,43 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);
 }
 
+// Lighting initialization function (from Code 1)
+void InitLight() {
+    GLfloat mat_diffuse[] = { 0.5f, 0.4f, 0.3f, 1.0f };
+    GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat mat_ambient[] = { 0.5f, 0.4f, 0.3f, 1.0f };
+    GLfloat mat_shininess[] = { 15.0f };
+    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat light_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+    GLfloat light_position[] = { -3.0f, 6.0f, 3.0f, 0.0f };
+
+    glShadeModel(GL_FLAT); // Use flat shading
+    glEnable(GL_DEPTH_TEST);
+    // Lighting will be enabled only when rendering the model
+    // glEnable(GL_LIGHTING);
+    // glEnable(GL_LIGHT0);
+
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+    // You can adjust the light colors here:
+    // light_diffuse[] controls the diffuse light color
+    // light_specular[] controls the specular light color
+    // light_ambient[] controls the ambient light color
+    // For example, to change the diffuse light to red:
+    // light_diffuse[0] = 1.0f; // Red component
+    // light_diffuse[1] = 0.0f; // Green component
+    // light_diffuse[2] = 0.0f; // Blue component
+}
+
 // Main function
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -449,10 +545,13 @@ int main(int argc, char** argv) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glPointSize(8.0f);
 
+    InitLight(); // Initialize lighting
+
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboardCallback);
     glutMouseFunc(mouseCallback);
+    glutMotionFunc(motionCallback); // Add motion callback for rotation
 
     // Create a submenu for rendering options
     int renderingMenu = glutCreateMenu(menuCallback);
