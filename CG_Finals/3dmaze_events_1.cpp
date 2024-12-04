@@ -14,12 +14,12 @@
 
 using namespace std;
 
+// Modified map with '3', '4', '5' indicating object positions
 const int map[17][17] = {
-    // [Map data remains unchanged]
     {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1},
     {1,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,1},
     {1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1},
-    {1,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,1},
+    {1,0,1,4,0,5,0,3,1,0,0,0,0,0,1,0,1},
     {1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1},
     {1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1},
     {1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1},
@@ -49,7 +49,8 @@ struct GameObject {
     std::string filename; // OBJ filename
 };
 
-GameObject objects[3];
+// Use a vector to store objects dynamically
+std::vector<GameObject> objects;
 
 // Texture ID for the maze
 GLuint textureID;
@@ -167,7 +168,7 @@ void generatemap() {
         for (int mapj = 0; mapj < 17; ++mapj) {
             if (map[mapi][mapj] == 1) {
                 glPushMatrix();
-                glTranslatef((mapj + 0.5f), 0, -1 * (mapi + 0.5f));
+                glTranslatef((mapj + 0.5f), -0.2, -1 * (mapi + 0.5f));
 
                 if (collectedCount == 0) {
                     // First phase: No lighting or textures
@@ -292,29 +293,33 @@ void init() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
 
-    // exe file 실행을 위해서는 경로 설정에 주의해야 함
-    // 상대경로로 지정된 경우 exe file 단독으로 실행되지 않음
-    // Initialize GameObjects
-    objects[0].filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example1.obj";
-    objects[0].x = 3.5f;
-    objects[0].y = -0.35f;
-    objects[0].z = -3.5f;
-    objects[0].collected = false;
+    // Process the map to find GameObjects
+    for (int mapi = 0; mapi < 17; ++mapi) {
+        for (int mapj = 0; mapj < 17; ++mapj) {
+            int cellValue = map[mapi][mapj];
+            if (cellValue == 3 || cellValue == 4 || cellValue == 5) {
+                GameObject obj;
+                obj.x = mapj + 0.5f;
+                obj.y = -0.1f;
+                obj.z = -1 * (mapi + 0.5f);
+                obj.collected = false;
+                // Assign filenames based on the cell value
+                if (cellValue == 3) {
+                    obj.filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example1.obj";
+                }
+                else if (cellValue == 4) {
+                    obj.filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example2.obj";
+                }
+                else if (cellValue == 5) {
+                    obj.filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example3.obj";
+                }
+                objects.push_back(obj);
+            }
+        }
+    }
 
-    objects[1].filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example2.obj";
-    objects[1].x = 4.0f;
-    objects[1].y = -0.35f;
-    objects[1].z = -4.0f;
-    objects[1].collected = false;
-
-    objects[2].filename = "C:/Users/teoju/Documents/GitHub/Computer-Graphics-Final/CG_Finals/Example3.obj";
-    objects[2].x = 7.5f;
-    objects[2].y = -0.35f;
-    objects[2].z = -7.5f;
-    objects[2].collected = false;
-
-    // Load OBJ files
-    for (int i = 0; i < 3; ++i) {
+    // Load OBJ files for all objects
+    for (size_t i = 0; i < objects.size(); ++i) {
         if (!loadOBJ(objects[i].filename.c_str(), objects[i].vertices, objects[i].faces)) {
             exit(1);
         }
@@ -376,7 +381,7 @@ void display() {
     generatemap();
 
     // Draw the OBJ models if not collected
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < objects.size(); ++i) {
         if (!objects[i].collected) {
             glPushMatrix();
             glTranslatef(objects[i].x, objects[i].y, objects[i].z);
@@ -388,7 +393,8 @@ void display() {
                 glDisable(GL_LIGHTING);
             }
 
-            glColor3f(1.0f, 0.3f, 0.0f); // Color of the OBJ
+            glColor3f(1.0f, 0.5f, 0.0f); // Color of the OBJ
+            glScalef(0.5f, 0.5f, 0.5f);
 
             // Draw the object
             glBegin(GL_TRIANGLES);
@@ -445,7 +451,7 @@ void display() {
     }
 
     // Display "You won!" message if all objects are collected
-    if (collectedCount >= 3) {
+    if (collectedCount >= objects.size()) {
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_LIGHTING);
 
@@ -468,44 +474,9 @@ void display() {
         glEnable(GL_DEPTH_TEST);
     }
 
-    glutSwapBuffers();
-}
-
-void specialkeys(int key, int x, int y) {
-    float nx = gx;
-    float nz = gz;
-    float fraction = 0.06f;
-
-    if (collectedCount < 3) {
-        switch (key) {
-        case GLUT_KEY_UP:
-            nx += fraction * sin(angle);
-            nz -= fraction * cos(angle);
-            break;
-        case GLUT_KEY_DOWN:
-            nx -= fraction * sin(angle);
-            nz += fraction * cos(angle);
-            break;
-        case GLUT_KEY_LEFT:
-            angle -= 3.14 / 180;
-            break;
-        case GLUT_KEY_RIGHT:
-            angle += 3.14 / 180;
-            break;
-        }
-    }
-
-    // Collision detection
-    int mi = (int)(floor(-nz));
-    int mj = (int)(floor(nx));
-
-    if (mi >= 0 && mi < 17 && mj >= 0 && mj < 17 && map[mi][mj] == 0) {
-        gx = nx;
-        gz = nz;
-    }
-
+    // Move collision detection here
     // Check if the player found any object
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < objects.size(); ++i) {
         if (!objects[i].collected) {
             float dx = gx - objects[i].x;
             float dz = gz - objects[i].z;
@@ -515,6 +486,48 @@ void specialkeys(int key, int x, int y) {
                 objects[i].collected = true;
                 collectedCount++;
             }
+        }
+    }
+
+    glutSwapBuffers();
+}
+
+void specialkeys(int key, int x, int y) {
+    float nx = gx;
+    float nz = gz;
+
+    
+    float fraction = 0.1f;
+
+    // Always allow movement and rotation
+    switch (key) {
+    case GLUT_KEY_UP:
+        nx += fraction * sin(angle);
+        nz -= fraction * cos(angle);
+        break;
+    case GLUT_KEY_DOWN:
+        nx -= fraction * sin(angle);
+        nz += fraction * cos(angle);
+        break;
+    case GLUT_KEY_LEFT:
+        angle -= 3.14 / 180;
+        break;
+    case GLUT_KEY_RIGHT:
+        angle += 3.14 / 180;
+        break;
+    }
+
+    // Collision detection with walls
+    //can adjust the range where the coliision is detected
+    int mi = (int)(floor(-nz));
+    int mj = (int)(floor(nx));
+
+    // Adjust collision detection to allow movement into cells with 0, 3, 4, 5
+    if (mi >= 0 && mi < 17 && mj >= 0 && mj < 17) {
+        int cellValue = map[mi][mj];
+        if (cellValue == 0 || cellValue == 3 || cellValue == 4 || cellValue == 5) {
+            gx = nx;
+            gz = nz;
         }
     }
 
@@ -528,7 +541,7 @@ void reshape(int w, int h) {
 }
 
 void mouse(int button, int state, int x, int y) {
-    if (collectedCount >= 3 && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    if (collectedCount >= objects.size() && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         exit(0);
     }
 }

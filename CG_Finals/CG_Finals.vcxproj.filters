@@ -39,13 +39,16 @@
     <ClCompile Include="3dmaze_events.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="3dmaze_events_hsr.cpp">
-      <Filter>Source Files\Working</Filter>
-    </ClCompile>
     <ClCompile Include="SoR_Modeler_4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SoR_Modeler_5.cpp">
+      <Filter>Source Files\Working</Filter>
+    </ClCompile>
+    <ClCompile Include="3dmaze_events_hsr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3dmaze_events_1.cpp">
       <Filter>Source Files\Working</Filter>
     </ClCompile>
   </ItemGroup>
