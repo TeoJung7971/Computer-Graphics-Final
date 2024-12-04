@@ -305,13 +305,13 @@ void init() {
                 obj.collected = false;
                 // Assign filenames based on the cell value
                 if (cellValue == 3) {
-                    obj.filename = "CG_Finals/Example1.obj";
+                    obj.filename = "Example1.obj";
                 }
                 else if (cellValue == 4) {
-                    obj.filename = "CG_Finals/Example2.obj";
+                    obj.filename = "Example2.obj";
                 }
                 else if (cellValue == 5) {
-                    obj.filename = "CG_Finals/Example3.obj";
+                    obj.filename = "Example3.obj";
                 }
                 objects.push_back(obj);
             }
@@ -327,7 +327,7 @@ void init() {
 
     // Load texture from an image file
     int width, height, nrChannels;
-    unsigned char* data = stbi_load("CG_Finals/brick_texture.jpg", &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load("brick_texture.jpg", &width, &height, &nrChannels, 0);
     if (!data) {
         std::cout << "Failed to load texture" << std::endl;
         exit(1);
