@@ -14,7 +14,7 @@
 
 using namespace std;
 
-// Modified map with '3', '4', '5' indicating object positions
+// Original map with '3', '4', '5' indicating object positions
 const int map[17][17] = {
     {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1},
     {1,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,1},
@@ -58,6 +58,29 @@ GLuint textureID;
 // Window dimensions
 int windowWidth = 1280;
 int windowHeight = 720;
+
+// Cube rotation angle
+float cubeRotation = 0.0f;
+
+// Cube vertex data
+GLfloat MyVertices[8][3] = {
+    {-0.25f, -0.25f, 0.25f}, {-0.25f, 0.25f, 0.25f}, {0.25f, 0.25f, 0.25f}, {0.25f, -0.25f, 0.25f},
+    {-0.25f, -0.25f, -0.25f}, {-0.25f, 0.25f, -0.25f}, {0.25f, 0.25f, -0.25f}, {0.25f, -0.25f, -0.25f}
+};
+
+GLfloat MyColors[8][3] = {
+    {0.2f, 0.2f, 0.2f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}
+};
+
+GLubyte MyVertexList[24] = {
+    0,1,2,3, // Front face
+    7,6,5,4, // Back face
+    3,2,6,7, // Right face
+    4,5,1,0, // Left face
+    5,6,2,1, // Top face
+    7,4,0,3  // Bottom face
+};
 
 bool loadOBJ(const char* filename, std::vector<float>& vertices, std::vector<unsigned int>& faces) {
     // [Function remains unchanged]
@@ -163,6 +186,44 @@ void drawTexturedCube(float size) {
     glEnd();
 }
 
+// Function to draw the axes
+void drawAxes() {
+    // Save current attributes
+    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
+    glPushMatrix();
+
+    // Disable lighting to make the axes colors solid
+    glDisable(GL_LIGHTING);
+
+    // Set line width
+    glLineWidth(2.0f);
+
+    // Draw X axis (red)
+    glColor3f(1.0f, 0.0f, 0.0f); // Red color
+    glBegin(GL_LINES);
+    glVertex3f(-10.0f, 0.0f, 0.0f);
+    glVertex3f(10.0f, 0.0f, 0.0f);
+    glEnd();
+
+    // Draw Y axis (blue)
+    glColor3f(0.0f, 0.0f, 1.0f); // Blue color
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, -10.0f, 0.0f);
+    glVertex3f(0.0f, 10.0f, 0.0f);
+    glEnd();
+
+    // Draw Z axis (green)
+    glColor3f(0.0f, 1.0f, 0.0f); // Green color
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, -10.0f);
+    glVertex3f(0.0f, 0.0f, 10.0f);
+    glEnd();
+
+    // Restore attributes
+    glPopMatrix();
+    glPopAttrib();
+}
+
 void generatemap() {
     for (int mapi = 0; mapi < 17; ++mapi) {
         for (int mapj = 0; mapj < 17; ++mapj) {
@@ -215,7 +276,7 @@ void generatemap() {
                     glDisable(GL_TEXTURE_2D);
 
                     // Set material color to green
-                    glColor3ub(144, 238, 144); // Light green
+                    glColor3ub(139, 0, 0); // Dark red
 
                     glEnable(GL_POLYGON_OFFSET_FILL);
                     glPolygonOffset(1.0, 1.0);
@@ -233,7 +294,7 @@ void generatemap() {
                     glDisable(GL_POLYGON_OFFSET_FILL);
 
                     // Draw edges
-                    glColor3ub(0, 0, 0);
+                    glColor3ub(0, 0, 0); // Black wireframe line 
                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
                     glutSolidCube(1);
@@ -365,139 +426,228 @@ void init() {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Set up the projection
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(80, (double)windowWidth / (double)windowHeight, 0.1, 100);
-
-    // Set up the camera
-    gluLookAt(gx, 0.5, gz, gx + sin(angle), 0.5, gz - cos(angle), 0, 1, 0);
-
-    // Modelview matrix
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    // Draw the maze
-    generatemap();
-
-    // Draw the OBJ models if not collected
-    for (size_t i = 0; i < objects.size(); ++i) {
-        if (!objects[i].collected) {
-            glPushMatrix();
-            glTranslatef(objects[i].x, objects[i].y, objects[i].z);
-
-            if (collectedCount >= 1) {
-                glEnable(GL_LIGHTING);
-            }
-            else {
-                glDisable(GL_LIGHTING);
-            }
-
-            glColor3f(1.0f, 0.5f, 0.0f); // Color of the OBJ
-            glScalef(0.5f, 0.5f, 0.5f);
-
-            // Draw the object
-            glBegin(GL_TRIANGLES);
-            for (size_t j = 0; j < objects[i].faces.size(); j += 3) {
-                unsigned int vi1 = objects[i].faces[j] * 3;
-                unsigned int vi2 = objects[i].faces[j + 1] * 3;
-                unsigned int vi3 = objects[i].faces[j + 2] * 3;
-
-                // Calculate normal for the triangle
-                float v1x = objects[i].vertices[vi1];
-                float v1y = objects[i].vertices[vi1 + 1];
-                float v1z = objects[i].vertices[vi1 + 2];
-
-                float v2x = objects[i].vertices[vi2];
-                float v2y = objects[i].vertices[vi2 + 1];
-                float v2z = objects[i].vertices[vi2 + 2];
-
-                float v3x = objects[i].vertices[vi3];
-                float v3y = objects[i].vertices[vi3 + 1];
-                float v3z = objects[i].vertices[vi3 + 2];
-
-                float nx, ny, nz;
-                // Compute normal vector
-                float ux = v2x - v1x;
-                float uy = v2y - v1y;
-                float uz = v2z - v1z;
-
-                float vx = v3x - v1x;
-                float vy = v3y - v1y;
-                float vz = v3z - v1z;
-
-                nx = uy * vz - uz * vy;
-                ny = uz * vx - ux * vz;
-                nz = ux * vy - uy * vx;
-
-                // Normalize the normal vector
-                float length = sqrt(nx * nx + ny * ny + nz * nz);
-                if (length != 0) {
-                    nx /= length;
-                    ny /= length;
-                    nz /= length;
-                }
-
-                glNormal3f(nx, ny, nz);
-
-                glVertex3f(v1x, v1y, v1z);
-                glVertex3f(v2x, v2y, v2z);
-                glVertex3f(v3x, v3y, v3z);
-            }
-            glEnd();
-
-            glPopMatrix();
-        }
-    }
-
-    // Display "You won!" message if all objects are collected
     if (collectedCount >= objects.size()) {
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_LIGHTING);
-
-        glMatrixMode(GL_PROJECTION);
+        // Final phase: Display rotating rainbow-colored cube on black background
+        // [Final phase code remains unchanged]
+        // Save current OpenGL states
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
+
+        glClearColor(0, 0, 0, 1); // Black background
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Set up projection and modelview matrices
+        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluOrtho2D(0, windowWidth, 0, windowHeight);
+        gluPerspective(60, (double)windowWidth / (double)windowHeight, 1.0, 10.0);
 
         glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
+        glLoadIdentity();
+        gluLookAt(0, 0, 3, 0, 0, 0, 0, 1, 0);
+
+        // Rotate the cube
+        glRotatef(cubeRotation, 1.0f, 1.0f, 0.0f);
+
+        // Enable smooth shading
+        glShadeModel(GL_SMOOTH);
+
+        // Disable unnecessary states
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+
+        // Draw the cube using GL_QUADS
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+
+        glVertexPointer(3, GL_FLOAT, 0, MyVertices);
+        glColorPointer(3, GL_FLOAT, 0, MyColors);
+
+        glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, MyVertexList);
+
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
+
+        cubeRotation += 0.5f; // Increment rotation angle
+        if (cubeRotation > 360.0f)
+            cubeRotation -= 360.0f;
+
+        glPopMatrix();
+        glPopAttrib();
+
+        glutSwapBuffers();
+        glutPostRedisplay(); // Request display update
+    }
+    else {
+        // Game phases before final phase
+
+        // Set up the projection
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(80, (double)windowWidth / (double)windowHeight, 0.1, 100);
+
+        // Set up the camera
+        gluLookAt(gx, 0.5, gz, gx + sin(angle), 0.5, gz - cos(angle), 0, 1, 0);
+
+        // Modelview matrix
+        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        glColor3f(0, 0, 0);
-        renderBitmapString(windowWidth / 2 - 50, windowHeight / 2, GLUT_BITMAP_HELVETICA_18, "You won!");
+        // Draw the axes behind the maze
+        glDepthRange(0.1, 1.0); // Push axes further back
+        drawAxes();
+        glDepthRange(0.0, 1.0); // Reset depth range
 
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
+        // Background color changes in phase 2 (collectedCount >= 1)
+        if (collectedCount >= 1) {
+            // Disable depth test and lighting for background quads
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_LIGHTING);
 
-        glEnable(GL_DEPTH_TEST);
-    }
+            // Save the current matrix
+            glPushMatrix();
+            // Reset the matrix
+            glLoadIdentity();
 
-    // Move collision detection here
-    // Check if the player found any object
-    for (size_t i = 0; i < objects.size(); ++i) {
-        if (!objects[i].collected) {
-            float dx = gx - objects[i].x;
-            float dz = gz - objects[i].z;
-            float distance = sqrt(dx * dx + dz * dz);
+            // Draw sky (y > -0.2), light blue color
+            glBegin(GL_QUADS);
+            glColor3ub(173, 216, 230); // Light blue color
+            glVertex3f(-100.0f, -0.2f, -100.0f);
+            glVertex3f(100.0f, -0.2f, -100.0f);
+            glVertex3f(100.0f, 100.0f, -100.0f);
+            glVertex3f(-100.0f, 100.0f, -100.0f);
+            glEnd();
 
-            if (distance < 0.8f) {
-                objects[i].collected = true;
-                collectedCount++;
+            // Draw ground (y < -0.2), light green color
+            glBegin(GL_QUADS);
+            glColor3ub(144, 238, 144); // Light green color
+            glVertex3f(-100.0f, -100.0f, -100.0f);
+            glVertex3f(100.0f, -100.0f, -100.0f);
+            glVertex3f(100.0f, -0.2f, -100.0f);
+            glVertex3f(-100.0f, -0.2f, -100.0f);
+            glEnd();
+
+            // Restore the matrix
+            glPopMatrix();
+
+            // Re-enable depth test and lighting
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_LIGHTING);
+        }
+        else {
+            // Before phase 2, set background color to white
+            glClearColor(1, 1, 1, 1);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        }
+
+        // Draw the maze
+        generatemap();
+
+        // Draw the OBJ models if not collected
+        for (size_t i = 0; i < objects.size(); ++i) {
+            if (!objects[i].collected) {
+                glPushMatrix();
+                glTranslatef(objects[i].x, objects[i].y, objects[i].z);
+
+                if (collectedCount >= 1) {
+                    glEnable(GL_LIGHTING);
+                }
+                else {
+                    glDisable(GL_LIGHTING);
+                }
+
+                glColor3f(1.0f, 0.5f, 0.0f); // Color of the OBJ
+                glScalef(0.5f, 0.5f, 0.5f);
+
+                // Draw the object
+                glBegin(GL_TRIANGLES);
+                for (size_t j = 0; j < objects[i].faces.size(); j += 3) {
+                    unsigned int vi1 = objects[i].faces[j] * 3;
+                    unsigned int vi2 = objects[i].faces[j + 1] * 3;
+                    unsigned int vi3 = objects[i].faces[j + 2] * 3;
+
+                    // Calculate normal for the triangle
+                    float v1x = objects[i].vertices[vi1];
+                    float v1y = objects[i].vertices[vi1 + 1];
+                    float v1z = objects[i].vertices[vi1 + 2];
+
+                    float v2x = objects[i].vertices[vi2];
+                    float v2y = objects[i].vertices[vi2 + 1];
+                    float v2z = objects[i].vertices[vi2 + 2];
+
+                    float v3x = objects[i].vertices[vi3];
+                    float v3y = objects[i].vertices[vi3 + 1];
+                    float v3z = objects[i].vertices[vi3 + 2];
+
+                    float nx, ny, nz;
+                    // Compute normal vector
+                    float ux = v2x - v1x;
+                    float uy = v2y - v1y;
+                    float uz = v2z - v1z;
+
+                    float vx = v3x - v1x;
+                    float vy = v3y - v1y;
+                    float vz = v3z - v1z;
+
+                    nx = uy * vz - uz * vy;
+                    ny = uz * vx - ux * vz;
+                    nz = ux * vy - uy * vx;
+
+                    // Normalize the normal vector
+                    float length = sqrt(nx * nx + ny * ny + nz * nz);
+                    if (length != 0) {
+                        nx /= length;
+                        ny /= length;
+                        nz /= length;
+                    }
+
+                    glNormal3f(nx, ny, nz);
+
+                    glVertex3f(v1x, v1y, v1z);
+                    glVertex3f(v2x, v2y, v2z);
+                    glVertex3f(v3x, v3y, v3z);
+                }
+                glEnd();
+
+                glPopMatrix();
             }
         }
-    }
 
-    glutSwapBuffers();
+        // Move collision detection here
+        // [Collision detection code remains unchanged]
+        for (size_t i = 0; i < objects.size(); ++i) {
+            if (!objects[i].collected) {
+                float dx = gx - objects[i].x;
+                float dz = gz - objects[i].z;
+                float distance = sqrt(dx * dx + dz * dz);
+
+                if (distance < 0.8f) {
+                    objects[i].collected = true;
+                    collectedCount++;
+                }
+            }
+        }
+
+        glutSwapBuffers();
+    }
 }
 
 void specialkeys(int key, int x, int y) {
+    if (collectedCount >= objects.size()) {
+        // Disable movement in final phase
+        return;
+    }
+    //gx and gz represent the player's current position on the X and Z axes.
+    //nx and nz are the new positions calculated based on player input.
+    //angle determines the direction the player is facing.
+    //fraction controls the movement speed.
+
     float nx = gx;
     float nz = gz;
 
-    
     float fraction = 0.1f;
+
+    const float collisionRadius = 0.25f; // Adjust it for changing the collison occuring range
+
 
     // Always allow movement and rotation
     switch (key) {
@@ -517,18 +667,46 @@ void specialkeys(int key, int x, int y) {
         break;
     }
 
+    
     // Collision detection with walls
-    //can adjust the range where the coliision is detected
     int mi = (int)(floor(-nz));
     int mj = (int)(floor(nx));
 
-    // Adjust collision detection to allow movement into cells with 0, 3, 4, 5
-    if (mi >= 0 && mi < 17 && mj >= 0 && mj < 17) {
-        int cellValue = map[mi][mj];
-        if (cellValue == 0 || cellValue == 3 || cellValue == 4 || cellValue == 5) {
-            gx = nx;
-            gz = nz;
+    // Collision detection with walls
+    bool canMove = true;
+
+    // Check surrounding cells for walls
+    for (int i = -1; i <= 1; ++i) {
+        for (int j = -1; j <= 1; ++j) {
+            int checkMi = mi + i;
+            int checkMj = mj + j;
+
+            if (checkMi >= 0 && checkMi < 17 && checkMj >= 0 && checkMj < 17) {
+                int cellValue = map[checkMi][checkMj];
+
+                if (cellValue == 1) {
+                    // Calculate the center position of the wall cell
+                    float cellCenterX = checkMj + 0.5f;
+                    float cellCenterZ = -checkMi - 0.5f;
+
+                    // Calculate distance to the wall cell
+                    float dx = nx - cellCenterX;
+                    float dz = nz - cellCenterZ;
+                    float distance = sqrt(dx * dx + dz * dz);
+
+                    if (distance < (collisionRadius + 0.5f)) {
+                        canMove = false;
+                        break;
+                    }
+                }
+            }
         }
+        if (!canMove) break;
+    }
+
+    if (canMove) {
+        gx = nx;
+        gz = nz;
     }
 
     glutPostRedisplay();
@@ -542,6 +720,7 @@ void reshape(int w, int h) {
 
 void mouse(int button, int state, int x, int y) {
     if (collectedCount >= objects.size() && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        // In the final phase, exit when the cube is clicked
         exit(0);
     }
 }
@@ -552,7 +731,7 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
     glutCreateWindow("3D MAZE Explorer");
     glutDisplayFunc(display);
-    glutIdleFunc(display);
+    glutIdleFunc(display); // Ensure continuous animation
     glutReshapeFunc(reshape);
     glutSpecialFunc(specialkeys);
     glutMouseFunc(mouse);
@@ -560,5 +739,4 @@ int main(int argc, char** argv) {
     init();
     glutMainLoop();
     return 0;
-
 }
