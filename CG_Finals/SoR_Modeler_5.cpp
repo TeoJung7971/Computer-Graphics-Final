@@ -190,7 +190,7 @@ void saveOBJFile() {
             outFile << "f ";
             for (int j = 0; j < 3; ++j) {
                 unsigned int idx = indices[i + j] + 1;
-                outFile << idx << "//" << idx << " ";
+                outFile << idx << " ";
             }
             outFile << "\n";
         }

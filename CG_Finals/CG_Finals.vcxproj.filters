@@ -49,6 +49,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="3dmaze_events_1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3d_maze_events_2.cpp">
       <Filter>Source Files\Working</Filter>
     </ClCompile>
   </ItemGroup>
