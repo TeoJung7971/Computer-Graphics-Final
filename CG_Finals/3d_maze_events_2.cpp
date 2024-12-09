@@ -1,4 +1,4 @@
-#include <GL/glut.h>
+﻿#include <GL/glut.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -9,7 +9,7 @@
 #include <sstream>
 #include <cstdio>
 
-// Image file loading�� ���� stb header
+// Image file loadingÀ» À§ÇÑ stb header
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -41,11 +41,11 @@ const int map[17][17] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
-//���� �ʱ�ȭ
+//전역 변수 선언
 float gx = 7.5f;
 float gz = -1.0f;
 float angle = 0.0f;
-int collectedCount = 0;
+int collectedCount = 0; 
 
 struct GameObject {
     std::vector<float> vertices;
@@ -69,7 +69,10 @@ GLuint grassTextureID_Phase2;  // Grass texture for Phase 2
 int windowWidth = 1280;
 int windowHeight = 720;
 
+//for final phase
 float cubeRotation = 0.0f;
+// for object rotation
+float rotationAngle = 0.0f;
 
 // Cube data for final phase
 GLfloat MyVertices[8][3] = {
@@ -237,7 +240,7 @@ void drawSkybox() {
     glColor3f(1.0f, 1.0f, 1.0f);
     float size = 50.0f;
 
-    // NEW: Choose skybox textures based on phase
+    // Choose skybox textures based on phase
     GLuint* currentSkybox;
     if (collectedCount == 2) {
         currentSkybox = skyboxTextures_Phase2;
@@ -449,13 +452,13 @@ void generatemap() {
 
                 }
                 else if (collectedCount == 2) {
-                    // Phase 2 start: Dark red cubes with lighting AND Phase 2 textures
+                    // Phase 2 start: Dark red cubes without lighting AND Phase 2 textures
                     if (firstTime_2) {
                         printf("Phase 2 start\n");
                         firstTime_2 = false;
                     }
 
-                    glEnable(GL_LIGHTING);
+                    //glEnable(GL_LIGHTING);
                     glEnable(GL_TEXTURE_2D);
 
                     glColor3f(1.0f, 1.0f, 1.0f);
@@ -542,10 +545,11 @@ void init() {
     glClearColor(1, 1, 1, 1);
 
     // Lighting parameters
-    GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
-    GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-    GLfloat light_diffuse[] = { 0.7f, 0.7f, 0.7f, 1.0f };
-    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat light_position[] = { 0.0f, 250.0f, 120.0f, 1.0f }; //x, y, z
+    // Lighting color
+    GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.4f }; // 중립적인 회색 환경광
+    GLfloat light_diffuse[] = { 1.2f, 1.2f, 0.8f, 1.0f }; // 노란 확산광
+    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f }; // 흰색 하이라이트
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
@@ -554,8 +558,8 @@ void init() {
 
     glEnable(GL_LIGHT0);
 
-    GLfloat mat_specular[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-    GLfloat mat_shininess[] = { 25.0f };
+    GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat mat_shininess[] = { 75.0f };
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
@@ -653,7 +657,7 @@ void display() {
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
 
-        cubeRotation += 1.5f;
+        cubeRotation += 0.3f;
         if (cubeRotation > 360.0f) cubeRotation -= 360.0f;
 
         glPopMatrix();
@@ -674,75 +678,204 @@ void display() {
         if (collectedCount == ((int)objects.size() - 1) || collectedCount == 2) {
             // Draw skybox
             drawSkybox();
-
             // Draw grass field
             drawGroundPlane();
         }
 
-        // Draw maze and objects
+        // Draw maze
         generatemap();
+
         for (size_t i = 0; i < objects.size(); ++i) {
             if (!objects[i].collected) {
                 glPushMatrix();
                 glTranslatef(objects[i].x, objects[i].y, objects[i].z);
 
-                if (collectedCount >= 1) {
-                    glEnable(GL_LIGHTING);
+                // Add object rotation
+                glRotatef(rotationAngle, 0.0f, 1.0f, 0.0f);
+
+                // Color and lighting settings based on collectedCount
+                if (collectedCount == 0) {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.0f, 0.0f, 0.0f);
+                }
+                else if (collectedCount == 1) {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.5f, 0.5f, 0.7f);
+                }
+                else if (collectedCount == 2) {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.9f, 0.9f, 1.2f); // 약간 밝은 톤
+                }
+                else if (collectedCount == 3) {
+                    glDisable(GL_LIGHTING);
+                    glShadeModel(GL_SMOOTH);
+                }
+
+                glScalef(0.35f, 0.35f, 0.35f);
+
+                if (collectedCount < 3) {
+                    // 기존 삼각형 기반 렌더링
+                    glBegin(GL_TRIANGLES);
+                    for (size_t j = 0; j < objects[i].faces.size(); j += 3) {
+                        unsigned int vi1 = objects[i].faces[j] * 3;
+                        unsigned int vi2 = objects[i].faces[j + 1] * 3;
+                        unsigned int vi3 = objects[i].faces[j + 2] * 3;
+
+                        float v1x = objects[i].vertices[vi1];
+                        float v1y = objects[i].vertices[vi1 + 1];
+                        float v1z = objects[i].vertices[vi1 + 2];
+
+                        float v2x = objects[i].vertices[vi2];
+                        float v2y = objects[i].vertices[vi2 + 1];
+                        float v2z = objects[i].vertices[vi2 + 2];
+
+                        float v3x = objects[i].vertices[vi3];
+                        float v3y = objects[i].vertices[vi3 + 1];
+                        float v3z = objects[i].vertices[vi3 + 2];
+
+                        float ux = v2x - v1x;
+                        float uy = v2y - v1y;
+                        float uz = v2z - v1z;
+
+                        float vx = v3x - v1x;
+                        float vy = v3y - v1y;
+                        float vz = v3z - v1z;
+
+                        float nx = uy * vz - uz * vy;
+                        float ny = uz * vx - ux * vz;
+                        float nz = ux * vy - uy * vx;
+
+                        float length = sqrt(nx * nx + ny * ny + nz * nz);
+                        if (length != 0) {
+                            nx /= length;
+                            ny /= length;
+                            nz /= length;
+                        }
+
+                        glNormal3f(nx, ny, nz);
+                        glVertex3f(v1x, v1y, v1z);
+                        glVertex3f(v2x, v2y, v2z);
+                        glVertex3f(v3x, v3y, v3z);
+                    }
+                    glEnd();
                 }
                 else {
-                    glDisable(GL_LIGHTING);
-                }
+                    // collectedCount == 3 인 경우: 사각형 기반 렌더링
+                    glBegin(GL_QUADS);
 
-                glColor3f(1.0f, 0.5f, 0.0f);
-                glScalef(0.5f, 0.5f, 0.5f);
+                    for (size_t j = 0; j + 5 < objects[i].faces.size(); j += 6) {
+                        unsigned int f[6] = {
+                            objects[i].faces[j],
+                            objects[i].faces[j + 1],
+                            objects[i].faces[j + 2],
+                            objects[i].faces[j + 3],
+                            objects[i].faces[j + 4],
+                            objects[i].faces[j + 5]
+                        };
 
-                glBegin(GL_TRIANGLES);
-                for (size_t j = 0; j < objects[i].faces.size(); j += 3) {
-                    unsigned int vi1 = objects[i].faces[j] * 3;
-                    unsigned int vi2 = objects[i].faces[j + 1] * 3;
-                    unsigned int vi3 = objects[i].faces[j + 2] * 3;
+                        std::vector<unsigned int> tri1 = { f[0], f[1], f[2] };
+                        std::vector<unsigned int> tri2 = { f[3], f[4], f[5] };
 
-                    float v1x = objects[i].vertices[vi1];
-                    float v1y = objects[i].vertices[vi1 + 1];
-                    float v1z = objects[i].vertices[vi1 + 2];
+                        auto find_shared = [&](std::vector<unsigned int>& t1, std::vector<unsigned int>& t2) {
+                            std::vector<unsigned int> shared;
+                            for (auto idx : t1) {
+                                if (std::find(t2.begin(), t2.end(), idx) != t2.end()) {
+                                    shared.push_back(idx);
+                                }
+                            }
+                            return shared;
+                            };
 
-                    float v2x = objects[i].vertices[vi2];
-                    float v2y = objects[i].vertices[vi2 + 1];
-                    float v2z = objects[i].vertices[vi2 + 2];
+                        // tri2를 최대 3번 회전하며 올바른 공유 꼭짓점 2개를 찾는다.
+                        for (int attempt = 0; attempt < 3; attempt++) {
+                            std::vector<unsigned int> shared = find_shared(tri1, tri2);
+                            if (shared.size() == 2) {
+                                // 올바른 공유 꼭짓점 획득
+                                // uniqueIndices 구하기
+                                std::vector<unsigned int> uniqueIndices;
+                                for (int u = 0; u < 3; u++) {
+                                    if (std::find(uniqueIndices.begin(), uniqueIndices.end(), tri1[u]) == uniqueIndices.end())
+                                        uniqueIndices.push_back(tri1[u]);
+                                }
+                                for (int u = 0; u < 3; u++) {
+                                    if (std::find(uniqueIndices.begin(), uniqueIndices.end(), tri2[u]) == uniqueIndices.end())
+                                        uniqueIndices.push_back(tri2[u]);
+                                }
 
-                    float v3x = objects[i].vertices[vi3];
-                    float v3y = objects[i].vertices[vi3 + 1];
-                    float v3z = objects[i].vertices[vi3 + 2];
+                                if (uniqueIndices.size() == 4) {
+                                    // A, B, C, D를 결정
+                                    // shared[0], shared[1]이 공유 꼭짓점.
+                                    // tri1에서 shared에 없는 것이 A, tri2에서 shared에 없는 것이 D라 가정
+                                    unsigned int A, D;
+                                    for (auto idx : tri1) {
+                                        if (std::find(shared.begin(), shared.end(), idx) == shared.end()) {
+                                            A = idx; break;
+                                        }
+                                    }
+                                    for (auto idx : tri2) {
+                                        if (std::find(shared.begin(), shared.end(), idx) == shared.end()) {
+                                            D = idx; break;
+                                        }
+                                    }
 
-                    float ux = v2x - v1x;
-                    float uy = v2y - v1y;
-                    float uz = v2z - v1z;
+                                    unsigned int B = shared[0];
+                                    unsigned int C = shared[1];
 
-                    float vx = v3x - v1x;
-                    float vy = v3y - v1y;
-                    float vz = v3z - v1z;
+                                    auto getV = [&](unsigned int idx) {
+                                        return &objects[i].vertices[idx * 3];
+                                        };
 
-                    float nx = uy * vz - uz * vy;
-                    float ny = uz * vx - ux * vz;
-                    float nz = ux * vy - uy * vx;
+                                    float* Av = getV(A);
+                                    float* Bv = getV(B);
+                                    float* Cv = getV(C);
+                                    float* Dv = getV(D);
 
-                    float length = sqrt(nx * nx + ny * ny + nz * nz);
-                    if (length != 0) {
-                        nx /= length;
-                        ny /= length;
-                        nz /= length;
+                                    // 노멀 계산
+                                    float ux = Bv[0] - Av[0];
+                                    float uy = Bv[1] - Av[1];
+                                    float uz = Bv[2] - Av[2];
+
+                                    float vx = Cv[0] - Av[0];
+                                    float vy = Cv[1] - Av[1];
+                                    float vz = Cv[2] - Av[2];
+
+                                    float nx = uy * vz - uz * vy;
+                                    float ny = uz * vx - ux * vz;
+                                    float nz = ux * vy - uy * vx;
+
+                                    float length = sqrt(nx * nx + ny * ny + nz * nz);
+                                    if (length != 0) {
+                                        nx /= length;
+                                        ny /= length;
+                                        nz /= length;
+                                    }
+
+                                    glNormal3f(nx, ny, nz);
+
+                                    // Rainbow Colors: Red, Green, Blue, Yellow
+                                    glColor3fv(MyColors[1]); glVertex3fv(Av);
+                                    glColor3fv(MyColors[2]); glVertex3fv(Bv);
+                                    glColor3fv(MyColors[4]); glVertex3fv(Cv);
+                                    glColor3fv(MyColors[6]); glVertex3fv(Dv);
+                                }
+                                // 공유 꼭짓점 찾았으니 break
+                                break;
+                            }
+                            // 공유 꼭짓점 2개 못 찾으면 tri2 회전
+                            std::rotate(tri2.begin(), tri2.begin() + 1, tri2.end());
+                        }
+
                     }
-
-                    glNormal3f(nx, ny, nz);
-                    glVertex3f(v1x, v1y, v1z);
-                    glVertex3f(v2x, v2y, v2z);
-                    glVertex3f(v3x, v3y, v3z);
+                    glEnd();
                 }
-                glEnd();
 
                 glPopMatrix();
             }
         }
+
+        // Update rotation angle
+        rotationAngle += 0.2f; // Adjust speed as needed
+        if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
 
         // Collision detection
         for (size_t i = 0; i < objects.size(); ++i) {
@@ -760,6 +893,7 @@ void display() {
         glutSwapBuffers();
     }
 }
+
 
 void specialkeys(int key, int x, int y) {
     if (collectedCount >= (int)objects.size()) {
