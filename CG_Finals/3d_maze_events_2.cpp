@@ -659,7 +659,7 @@ void display() {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
 
-        glClearColor(0, 0, 0, 1);
+        glClearColor(1, 1, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glMatrixMode(GL_PROJECTION);
@@ -725,15 +725,17 @@ void display() {
 
                 if (collectedCount == 0) {
                     glDisable(GL_LIGHTING);
-                    glColor3f(0.0f, 0.0f, 0.0f);
+                    glColor3ub(0, 82, 33); //light-green 색상 매칭
                 }
                 else if (collectedCount == 1) {
+                    glEnable(GL_POLYGON_OFFSET_FILL); //glDisable(GL_POLYGON_OFFSET_FILL);과 매칭 필요?
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                     glDisable(GL_LIGHTING);
-                    glColor3f(0.5f, 0.5f, 0.7f);
+                    glColor3ub(63, 128, 70); //light-green 색상 매칭
                 }
                 else if (collectedCount == 2) {
                     glEnable(GL_LIGHTING);
-                    glColor3f(0.9f, 0.9f, 1.2f); // 약간 밝은 톤
+                    glColor3f(204, 235, 197); // 약간 밝은 톤
                 }
                 else if (collectedCount == 3) {
                     //목표: map에 적용되는 lighting은 on, obj에 적용되는 lighting은 off
