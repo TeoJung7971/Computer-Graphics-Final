@@ -8,40 +8,18 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <locale.h>
 
-// Image file loadingÀ» À§ÇÑ stb header
+// Image file 로드하여 texture로 사용하기 위한 header 추가
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 using namespace std;
 
 // Maze data
-
 //0 = Empty
 //1 = Wall
 //N(N>1) = Objects
-
-// maze example 
-// 확장 및 구조 변형 진행
-//const int map[17][17] = {
-//    {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1},
-//    {1,0,0,3,1,0,1,0,1,0,0,0,0,0,0,0,1},
-//    {1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1},
-//    {1,0,1,5,0,4,0,2,1,0,0,0,0,0,1,0,1},
-//    {1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1},
-//    {1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1},
-//    {1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1},
-//    {1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1},
-//    {1,0,1,1,1,0,1,0,0,0,1,0,1,1,1,1,1},
-//    {1,0,0,0,1,0,1,0,0,0,1,0,0,0,0,0,1},
-//    {1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1},
-//    {1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1},
-//    {1,0,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1},
-//    {1,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1},
-//    {1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1},
-//    {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1},
-//    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-//};
 
 const int map[20][20] = {
     {1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1},
@@ -67,11 +45,15 @@ const int map[20][20] = {
 };
 
 //전역 변수 선언
+//시작 위치 및 각도
 float gx = 8.5f;
 float gz = 2.0f;
 float angle = 0.0f;
+
+//오브젝트 획득 개수 초기화
 int collectedCount = 0; 
 
+//Object 구조체
 struct GameObject {
     std::vector<float> vertices;
     std::vector<unsigned int> faces;
@@ -82,15 +64,17 @@ struct GameObject {
 
 std::vector<GameObject> objects;
 
+//Phase 3용 texture ID
 GLuint textureID_Phase3;       // Maze texture for Phase 3
 GLuint skyboxTextures_Phase3[6];
 GLuint grassTextureID_Phase3;  // Grass texture for Phase 3
 
-// NEW: Separate texture sets for Phase 2
+//Phase 2용 texture ID
 GLuint textureID_Phase2;       // Maze texture for Phase 2
 GLuint skyboxTextures_Phase2[6];
 GLuint grassTextureID_Phase2;  // Grass texture for Phase 2
 
+//초기 윈도우 크기
 int windowWidth = 1280;
 int windowHeight = 720;
 
@@ -99,7 +83,7 @@ float cubeRotation = 0.0f;
 // for object rotation
 float rotationAngle = 0.0f;
 
-// Cube data for final phase and Object 4
+// Cube data for final phase and Object 4: Practice 코드 변형하여 사용
 GLfloat MyVertices[8][3] = {
     {-0.25f, -0.25f, 0.25f}, {-0.25f, 0.25f, 0.25f}, {0.25f, 0.25f, 0.25f}, {0.25f, -0.25f, 0.25f},
     {-0.25f, -0.25f, -0.25f}, {-0.25f, 0.25f, -0.25f}, {0.25f, 0.25f, -0.25f}, {0.25f, -0.25f, -0.25f}
@@ -124,6 +108,11 @@ GLubyte MyVertexList[24] = {
     7,4,0,3
 };
 
+//Object load function
+//file 구조
+//v, f, vn type 존재
+//value 앞에 type 명기
+//vn은 추후 obj 그릴 때 다시 계산하므로 여기에서 읽지 않음
 bool loadOBJ(const char* filename, std::vector<float>& vertices, std::vector<unsigned int>& faces) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -402,6 +391,7 @@ void drawGroundPlane() {
 // Generate the map
 void generatemap() {
 
+    //Prompt에 Phase 바뀔 떄 *한번 씩만* 현재 페이즈 출력하기 위해 사용
     static bool firstTime_0 = true;
     static bool firstTime_1 = true;
     static bool firstTime_2 = true;
@@ -416,7 +406,7 @@ void generatemap() {
                 if (collectedCount == 0) {
                     // Phase 0: White cubes, no lighting/texture
                     if (firstTime_0) {
-                        printf("Phase 0 start\n");
+                        printf("첫 번째 페이즈가 시작됐습니다.\n");
                         firstTime_0 = false;
                     }
 
@@ -448,9 +438,10 @@ void generatemap() {
 
                 }
                 else if (collectedCount == 1) {
-                    // Phase 1: Dark yellow cubes without lighting
+                    // Phase 1: Light-green cubes without lighting
                     if (firstTime_1) {
-                        printf("Phase 1 start\n");
+                        printf("첫 번째 오브젝트를 획득했습니다.\n");
+                        printf("두 번째 페이즈가 시작됩니다.\n");
                         firstTime_1 = false;
                     }
 
@@ -481,9 +472,10 @@ void generatemap() {
 
                 }
                 else if (collectedCount == 2) {
-                    // Phase 2 start: Dark red cubes without lighting AND Phase 2 textures
+                    // Phase 2 start: Texture and lighting with the original Phase 2 textures: green theme
                     if (firstTime_2) {
-                        printf("Phase 2 start\n");
+                        printf("두 번째 오브젝트를 획득했습니다.\n");
+                        printf("세 번째 페이즈가 시작됩니다.\n");
                         firstTime_2 = false;
                     }
 
@@ -506,7 +498,8 @@ void generatemap() {
                 else if (collectedCount == 3) {
                     // Phase 3 start: Texture and lighting with the original Phase 3 textures
                     if (firstTime_3) {
-                        printf("Phase 3 start\n");
+                        printf("세 번째 오브젝트를 획득했습니다.\n");
+                        printf("네 번째 페이즈가 시작됩니다.\n");
                         firstTime_3 = false;
                     }
 
@@ -523,7 +516,7 @@ void generatemap() {
                     drawTexturedCube(1, textureID_Phase3);
                     glPopMatrix();
 
-                    glDisable(GL_TEXTURE_2D);
+                    glDisable(GL_POLYGON_OFFSET_FILL);
                 }
 
                 glPopMatrix();
@@ -577,7 +570,7 @@ void init() {
     // 참고: https://sungcheol-kim.gitbook.io/opengl-tutorial/chapter10
     
     // Lighting parameters
-    GLfloat light_position[] = { 50.0f, 300.0f, 120.0f, 2.0f }; //x, y, z
+    GLfloat light_position[] = { 0.0f, 300.0f, 120.0f, 2.0f }; //x, y, z
     // Lighting color
     GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.4f }; // 중립적인 회색 환경광
     GLfloat light_diffuse[] = { 1.2f, 1.2f, 0.8f, 1.0f }; // 노란 확산광
@@ -617,6 +610,7 @@ void init() {
                     obj.filename = "resource/Example3.obj";
                 }
                 else if (cellValue == 5) {
+                    //마지막 object를 cube로 변경하며 현재는 사용 안 함
                     obj.filename = "resource/Example4.obj";
                 }
                 objects.push_back(obj);
@@ -625,6 +619,7 @@ void init() {
     }
 
     // Load OBJ files
+    //파일 이름 및 경로 주의
     for (size_t i = 0; i < objects.size(); ++i) {
         if (!loadOBJ(objects[i].filename.c_str(), objects[i].vertices, objects[i].faces)) {
             exit(1);
@@ -716,8 +711,10 @@ void display() {
             drawGroundPlane();
         }
 
-        // Draw maze and objects
+        // Draw maze: call generatemap()
         generatemap();
+
+        //Draw objects
         for (size_t i = 0; i < objects.size(); ++i) {
             if (!objects[i].collected) {
                 glPushMatrix();
@@ -739,6 +736,11 @@ void display() {
                     glColor3f(0.9f, 0.9f, 1.2f); // 약간 밝은 톤
                 }
                 else if (collectedCount == 3) {
+                    //목표: map에 적용되는 lighting은 on, obj에 적용되는 lighting은 off
+                    
+                    //현재 function에서 glDisable(GL_LIGHTING) 적용
+                    //generatemap() function collectedCount == 3인 경우 glEnable(GL_LIGHTING) 적용
+
                     glDisable(GL_LIGHTING);
                     glDisable(GL_TEXTURE_2D);
 
@@ -816,10 +818,10 @@ void display() {
         }
 
         // Update rotation angle
-        rotationAngle += 0.3f; // Adjust speed as needed
+        rotationAngle += 0.3f; // 회전 속도 조절 parameter
         if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
 
-        // Collision detection
+        // Collision detection with objects
         for (size_t i = 0; i < objects.size(); ++i) {
             if (!objects[i].collected) {
                 float dx = gx - objects[i].x;
@@ -845,7 +847,7 @@ void specialkeys(int key, int x, int y) {
     float nx = gx;
     float nz = gz;
     float fraction = 0.15f;
-    const float collisionRadius = 0.22f;
+    const float collisionRadius = 0.22f; //충돌 감지 범위 조절 parameter: 0.2이하에서는 map 내부 보이는 현상 발생
 
     switch (key) {
     case GLUT_KEY_UP:
@@ -883,6 +885,7 @@ void specialkeys(int key, int x, int y) {
                     float distance = sqrt(dx * dx + dz * dz);
                     if (distance < (collisionRadius + 0.5f)) {
                         canMove = false;
+                        printf("충돌 발생!\n");
                         break;
                     }
                 }
@@ -906,6 +909,7 @@ void reshape(int w, int h) {
 }
 
 void mouse(int button, int state, int x, int y) {
+    //final phase에서 click 시 exit
     if (collectedCount >= (int)objects.size() && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         exit(0);
     }
@@ -915,7 +919,21 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitWindowSize(windowWidth, windowHeight);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
+
     glutCreateWindow("3D MAZE Explorer");
+    //게임 안내 프롬포트 출력
+    //한글 설정: UTF-8
+    printf("[이동 방법]\n");
+    printf("*키보드 이동 키 사용*\n");
+    printf("상: ↑\n하: ↓\n좌: ←\n우: →\n\n");
+
+    printf("[게임 목적]\n");
+    printf("미로를 탐험하며 오브젝트를 찾아 맵에 색깔과 텍스쳐를 더해 완성하세요.\n");
+    printf("맵을 모두 완성하고, 빛나는 큐브를 찾아 클릭하면 게임이 종료됩니다.\n\n");
+
+    printf("[현재 상태]\n");
+
+
     glutDisplayFunc(display);
     glutIdleFunc(display);
     glutReshapeFunc(reshape);
