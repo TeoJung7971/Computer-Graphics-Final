@@ -28,9 +28,13 @@ bool resultShown = false;              // Flag to track if revolution result is 
 
 double cameraDistance = 5.0;           // Camera distance for zooming
 
-// Rendering mode enumeration
+// Rendering mode 선택: 기본은 wireframe으로
 enum RenderMode { WIREFRAME, SURFACE };
-RenderMode renderMode = WIREFRAME;     // Current rendering mode
+RenderMode renderMode = WIREFRAME;     
+// Based axis mode 선택: 기본은 Y-axis로
+enum RotationAxis { X_AXIS, Y_AXIS };
+RotationAxis rotationAxis = Y_AXIS;
+
 
 // Variables for rotation
 float angle = 0.0f;                    // Rotation angle
@@ -58,7 +62,7 @@ void reset() {
 }
 
 // Function to generate a unique filename
-std::string generateUniqueFilename() {
+std::string generateFilename() {
     std::ostringstream filename;
     filename << "revolved_object_" << std::time(nullptr) << ".obj";
     return filename.str();
@@ -76,19 +80,42 @@ void revolvePoints() {
     normals.clear();
 
     int steps = 360 / degree;
-    float radiansInterval = degree * M_PI / 180.0f;
+    float radiansInterval = degree * M_PI / 180.0f; //각도 계산을 위해 radian으로 변환
 
     // Generate vertices for the revolved surface
     for (const auto& point : initialPoints) {
+        // steps = 360 / degree
         for (int s = 0; s < steps; ++s) {
             float angle = s * radiansInterval;
             float cosA = cos(angle);
             float sinA = sin(angle);
 
+            float xNew, yNew, zNew;
+
+            // 현재 선택된 중심 축에 따라서 회전 변환 공식 적용
+            if (rotationAxis == Y_AXIS) {
+                // Y축 회전
+                // x' = x*cosA + z*sinA
+                // y' = y
+                // z' = -x*sinA + z*cosA
+                xNew = point.x * cosA + point.z * sinA;
+                yNew = point.y;
+                zNew = -point.x * sinA + point.z * cosA;
+            }
+            else {
+                // X축 회전
+                // x' = x
+                // y' = y*cosA - z*sinA
+                // z' = y*sinA + z*cosA
+                xNew = point.x;
+                yNew = point.y * cosA - point.z * sinA;
+                zNew = point.y * sinA + point.z * cosA;
+            }
+
             revolvedPoints.push_back({
-                point.x * cosA,
-                point.y,
-                point.x * sinA
+                xNew,
+                yNew,
+                zNew
                 });
         }
     }
@@ -173,7 +200,7 @@ void revolvePoints() {
 
 // Function to save revolved points in OBJ format
 void saveOBJFile() {
-    std::ofstream outFile(generateUniqueFilename());
+    std::ofstream outFile(generateFilename());
     if (outFile.is_open()) {
         // Write vertices
         for (const auto& p : revolvedPoints) {
@@ -185,7 +212,7 @@ void saveOBJFile() {
             outFile << "vn " << n.x << " " << n.y << " " << n.z << "\n";
         }
 
-        // Write faces with normals
+        // Write faces 
         for (size_t i = 0; i < indices.size(); i += 3) {
             outFile << "f ";
             for (int j = 0; j < 3; ++j) {
@@ -369,6 +396,46 @@ void display() {
         glMatrixMode(GL_MODELVIEW);
     }
 
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, windowWidth, 0, windowHeight);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_LIGHTING);
+    glColor3f(0.0f, 0.0f, 0.0f);
+
+    int modeTextX = 10;
+    int modeTextY = windowHeight - 20;
+
+    // "Current Mode"
+    glRasterPos2f((GLfloat)modeTextX, (GLfloat)modeTextY);
+    std::string modeTitle = "Current Mode";
+    for (char c : modeTitle) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+
+    // RenderMode 표시
+    std::string renderState = (renderMode == WIREFRAME) ? "- Wireframe" : "- Surface";
+    glRasterPos2f((GLfloat)modeTextX, (GLfloat)(modeTextY - 30));
+    for (char c : renderState) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+
+    // RotationAxis 표시
+    std::string axisState = (rotationAxis == Y_AXIS) ? "- Y-axis" : "- X-axis";
+    glRasterPos2f((GLfloat)modeTextX, (GLfloat)(modeTextY - 60));
+    for (char c : axisState) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+
     glFlush();
     glutSwapBuffers();
 }
@@ -484,6 +551,14 @@ void menuCallback(int option) {
         renderMode = SURFACE;
         glutPostRedisplay();
         break;
+    case 5: // Rotate about X
+        rotationAxis = X_AXIS;
+        glutPostRedisplay();
+        break;
+    case 6: // Rotate about Y
+        rotationAxis = Y_AXIS;
+        glutPostRedisplay();
+        break;
     }
 }
 
@@ -508,9 +583,6 @@ void InitLight() {
 
     glShadeModel(GL_FLAT); // Use flat shading
     glEnable(GL_DEPTH_TEST);
-    // Lighting will be enabled only when rendering the model
-    // glEnable(GL_LIGHTING);
-    // glEnable(GL_LIGHT0);
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
@@ -521,15 +593,6 @@ void InitLight() {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-
-    // You can adjust the light colors here:
-    // light_diffuse[] controls the diffuse light color
-    // light_specular[] controls the specular light color
-    // light_ambient[] controls the ambient light color
-    // For example, to change the diffuse light to red:
-    // light_diffuse[0] = 1.0f; // Red component
-    // light_diffuse[1] = 0.0f; // Green component
-    // light_diffuse[2] = 0.0f; // Blue component
 }
 
 // Main function
@@ -558,11 +621,16 @@ int main(int argc, char** argv) {
     glutAddMenuEntry("Wireframe", 3);
     glutAddMenuEntry("Surface", 4);
 
+    int axisMenu = glutCreateMenu(menuCallback);
+    glutAddMenuEntry("Rotate about X", 5);
+    glutAddMenuEntry("Rotate about Y", 6);
+
     // Create the main menu
     glutCreateMenu(menuCallback);
     glutAddMenuEntry("Set Revolution Degree", 1);
     glutAddMenuEntry("Reset", 2);
     glutAddSubMenu("Rendering", renderingMenu);
+    glutAddSubMenu("Axis", axisMenu);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     glutMainLoop();
