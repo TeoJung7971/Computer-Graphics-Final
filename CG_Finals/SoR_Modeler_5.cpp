@@ -570,7 +570,7 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);
 }
 
-// Lighting initialization function (from Code 1)
+// Lighting initialization function: 연습 코드 참조
 void InitLight() {
     GLfloat mat_diffuse[] = { 0.5f, 0.4f, 0.3f, 1.0f };
     GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -581,7 +581,7 @@ void InitLight() {
     GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
     GLfloat light_position[] = { -3.0f, 6.0f, 3.0f, 0.0f };
 
-    glShadeModel(GL_FLAT); // Use flat shading
+    glShadeModel(GL_FLAT); // Use flat shading: smooth보다 (구조를) 보기 좋음
     glEnable(GL_DEPTH_TEST);
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
@@ -616,11 +616,12 @@ int main(int argc, char** argv) {
     glutMouseFunc(mouseCallback);
     glutMotionFunc(motionCallback); // Add motion callback for rotation
 
-    // Create a submenu for rendering options
+    // Wirefram vs Surface
     int renderingMenu = glutCreateMenu(menuCallback);
     glutAddMenuEntry("Wireframe", 3);
     glutAddMenuEntry("Surface", 4);
 
+    // Y-axis vs X-axis
     int axisMenu = glutCreateMenu(menuCallback);
     glutAddMenuEntry("Rotate about X", 5);
     glutAddMenuEntry("Rotate about Y", 6);
