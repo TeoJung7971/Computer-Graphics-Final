@@ -492,7 +492,7 @@ void generatemap() {
                     drawTexturedCube(1, textureID_Phase2);
                     glPopMatrix();
 
-                    glDisable(GL_POLYGON_OFFSET_FILL);
+                   // glDisable(GL_POLYGON_OFFSET_FILL);
 
                 }
                 else if (collectedCount == 3) {
@@ -761,6 +761,7 @@ void display() {
                     glDisableClientState(GL_COLOR_ARRAY);
                 }
 
+                //Example4.obj 사용 X
                 if (collectedCount != 3) {
                     glScalef(0.31f, 0.31f, 0.31f);
                 }

@@ -8,7 +8,8 @@
 #include <ctime>
 #include <string>
 
-// Structure for storing points
+// Point 저장 위한 구조체
+// Example에서는 w값 사용했으나 여기에선 제외
 struct Point3D {
     float x, y, z;
 };
@@ -29,7 +30,7 @@ bool resultShown = false;              // Flag to track if revolution result is 
 double cameraDistance = 5.0;           // Camera distance for zooming
 
 // Rendering mode 선택: 기본은 wireframe으로
-enum RenderMode { WIREFRAME, SURFACE };
+enum RenderMode { WIREFRAME, SHADE };
 RenderMode renderMode = WIREFRAME;     
 // Based axis mode 선택: 기본은 Y-axis로
 enum RotationAxis { X_AXIS, Y_AXIS };
@@ -264,7 +265,7 @@ void renderInitialPoints() {
 
 // Function to render the model based on the current rendering mode
 void renderModel() {
-    if (renderMode == SURFACE) {
+    if (renderMode == SHADE) {
         // Enable lighting for surface rendering
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -418,7 +419,7 @@ void display() {
     }
 
     // RenderMode 표시
-    std::string renderState = (renderMode == WIREFRAME) ? "- Wireframe" : "- Surface";
+    std::string renderState = (renderMode == WIREFRAME) ? "- Wireframe" : "- Shade";
     glRasterPos2f((GLfloat)modeTextX, (GLfloat)(modeTextY - 30));
     for (char c : renderState) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
@@ -548,7 +549,7 @@ void menuCallback(int option) {
         glutPostRedisplay();
         break;
     case 4: // Surface Rendering
-        renderMode = SURFACE;
+        renderMode = SHADE;
         glutPostRedisplay();
         break;
     case 5: // Rotate about X
@@ -619,7 +620,7 @@ int main(int argc, char** argv) {
     // Wirefram vs Surface
     int renderingMenu = glutCreateMenu(menuCallback);
     glutAddMenuEntry("Wireframe", 3);
-    glutAddMenuEntry("Surface", 4);
+    glutAddMenuEntry("Shade", 4);
 
     // Y-axis vs X-axis
     int axisMenu = glutCreateMenu(menuCallback);
