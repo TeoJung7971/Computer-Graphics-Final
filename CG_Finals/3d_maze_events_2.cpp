@@ -446,6 +446,7 @@ void generatemap() {
                     }
 
                     glDisable(GL_TEXTURE_2D);
+                    glDisable(GL_LIGHTING);
 
                     glColor3ub(154, 247, 100); //light-green: phase 2와 연결될 수 있도록
 
@@ -568,13 +569,18 @@ void init() {
 
     //색상 조절하여 가장 *좋은* 설정으로 변경
     // 참고: https://sungcheol-kim.gitbook.io/opengl-tutorial/chapter10
+    // 참소: https://user.xmission.com/~nate/tutors.html : position setting
     
     // Lighting parameters
-    GLfloat light_position[] = { 0.0f, 300.0f, 120.0f, 2.0f }; //x, y, z
+    // GLfloat light_position[] = { 30.0f, 80.0f, -30.0f, 1.0f }; //x, y, z
+    GLfloat light_position[] = { 10.0f, -1.0f, -10.0f, 0.0f };
+
     // Lighting color
-    GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.4f }; // 중립적인 회색 환경광
-    GLfloat light_diffuse[] = { 1.2f, 1.2f, 0.8f, 1.0f }; // 노란 확산광
-    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f }; // 흰색 하이라이트
+    GLfloat light_ambient[] = { 0.6f, 0.6f, 0.6f, 1.0f }; // 중립적인 환경광
+    GLfloat light_diffuse[] = { 1.3f, 1.3f, 0.5f, 1.0f }; // 노란 확산광
+    GLfloat light_specular[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // 흰색 하이라이트
+    // collectedCount == 2일 경우 재설정?
+    // 이후 map rendering 시 기존 설정 적용 가능?
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
@@ -653,9 +659,15 @@ void init() {
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    static bool last_phase = true;
 
     if (collectedCount >= (int)objects.size()) {
         // Final phase: black background and rotating cube
+        if (last_phase) {
+            printf("모든 오브젝틀 획득하고 맵을 완성했습니다!\n");
+            printf("빛나는 큐브를 클릭하면 게임이 종료됩니다.");
+            last_phase = false;
+        }
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
 
@@ -685,7 +697,7 @@ void display() {
         glDisableClientState(GL_COLOR_ARRAY);
 
         //모니터 해상도에 따라 속도 변화?
-        cubeRotation += 0.3f;
+        cubeRotation += 0.1f;
         if (cubeRotation > 360.0f) cubeRotation -= 360.0f;
 
         glPopMatrix();
@@ -729,13 +741,26 @@ void display() {
                 }
                 else if (collectedCount == 1) {
                     glEnable(GL_POLYGON_OFFSET_FILL); //glDisable(GL_POLYGON_OFFSET_FILL);과 매칭 필요?
+                    glEnable(GL_LIGHTING);
+                    //lighting을 끄고 싶다면: glDisable(GL_LIGHTING);
                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                    glDisable(GL_LIGHTING);
-                    glColor3ub(63, 128, 70); //light-green 색상 매칭
+                    glColor3ub(63, 128, 70); //light-green 색상 매칭 -> Object1보다 밝은 색상
                 }
                 else if (collectedCount == 2) {
                     glEnable(GL_LIGHTING);
-                    glColor3f(204, 235, 197); // 약간 밝은 톤
+                    glColor3f(0.8f, 1.0f, 0.8f);
+
+                    //다른 조명 세팅하는 경우
+                    //현재는 기존 조명 활용 -> init() 참조
+                    //GLfloat mat_ambient[] = { 0.3f, 0.9f, 0.3f, 1.0f }; // Ambient color: 초록색 톤으로
+                    //GLfloat mat_diffuse[] = { 0.6f, 1.2f, 0.6f, 1.2f }; // Diffuse color: 밝은 초록
+                    //GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f }; // Highlight: 백색광
+                    //GLfloat mat_shininess[] = { 100.0f }; // Shininess factor
+
+                    //glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
+                    //glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+                    //glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
+                    //glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
                 }
                 else if (collectedCount == 3) {
                     //목표: map에 적용되는 lighting은 on, obj에 적용되는 lighting은 off
@@ -821,7 +846,7 @@ void display() {
         }
 
         // Update rotation angle
-        rotationAngle += 0.3f; // 회전 속도 조절 parameter
+        rotationAngle += 0.1f; // 회전 속도 조절 parameter
         if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
 
         // Collision detection with objects

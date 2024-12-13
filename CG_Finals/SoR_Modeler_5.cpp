@@ -580,7 +580,10 @@ void InitLight() {
     GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat light_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat light_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-    GLfloat light_position[] = { -3.0f, 6.0f, 3.0f, 0.0f };
+
+    //광원 위치 변경
+    //태양광과 유사하게, top-down???
+    GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 0.0f }; //마지막 param = 0.0: 방향광
 
     glShadeModel(GL_FLAT); // Use flat shading: smooth보다 (구조를) 보기 좋음
     glEnable(GL_DEPTH_TEST);
