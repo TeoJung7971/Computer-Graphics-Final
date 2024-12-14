@@ -37,10 +37,10 @@ enum RotationAxis { X_AXIS, Y_AXIS };
 RotationAxis rotationAxis = Y_AXIS;
 
 
-// Variables for rotation
-float angle = 0.0f;                    // Rotation angle
-int moving = 0;
-int startX = 0;                        // Initial X position when dragging
+// 회전 기능을 위한 변수들
+float angle = 0.0f; // (현재) 회전각
+int moving = 0; // 동작 여부(좌클릭 시에만 ON)
+int startX = 0; // 드래그 시 회전이 시작되는 위치
 
 // Function to add a 2D point on mouse click
 void addPoint(float x, float y) {
@@ -69,7 +69,8 @@ std::string generateFilename() {
     return filename.str();
 }
 
-// Function to revolve points around the Y-axis at intervals of the given degree
+//주어진 간격(이 경우 간격은 360/각도)로 점을 회전시키는 함수
+//회전 기준 축: Y-axis || X-axis
 void revolvePoints() {
     if (degree <= 0 || degree >= 360) {
         std::cerr << "Invalid degree value. Must be between 1 and 359.\n";
@@ -251,7 +252,7 @@ void drawAxes() {
     glEnd();
 }
 
-// Function to render initial points
+// 처음 입력받은 점 렌더링
 void renderInitialPoints() {
     glDisable(GL_LIGHTING); // Disable lighting for initial points
     glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
@@ -263,50 +264,59 @@ void renderInitialPoints() {
     glEnd();
 }
 
-// Function to render the model based on the current rendering mode
+// 모델(회전 결과) 렌더링, 단 현재 renderMode에 따라 WIREFRAME/SHADE 결정
 void renderModel() {
     if (renderMode == SHADE) {
-        // Enable lighting for surface rendering
+        // Enanble Lighting: param은 InitLight func에서 설정되어 있음
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
 
-        glShadeModel(GL_FLAT); // Use flat shading
+        //glShadeModel(GL_SMOOTH);
+        glShadeModel(GL_FLAT); // SMOOTH 보기 불편 -> FLAT으로 설정
 
-        // Render surface
-        glColor3f(1.0f, 0.0f, 0.0f); // Surface color (same as Code 1)
+        // 표면 렌더링
+        glColor3f(1.0f, 0.0f, 0.0f); // 붉은색으로 초기 설정
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_VERTEX_ARRAY); //On
         glEnableClientState(GL_NORMAL_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
-        glNormalPointer(GL_FLOAT, 0, &normals[0]);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glDisableClientState(GL_NORMAL_ARRAY);
+
+        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]); //회전 결과 점 위치값 전달
+        glNormalPointer(GL_FLOAT, 0, &normals[0]); //회전 결과 NV 전달 -> lighting 위한 정보
+
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]); //실제 화면에 출력(Draw)
+
+        glDisableClientState(GL_NORMAL_ARRAY); //Off
         glDisableClientState(GL_VERTEX_ARRAY);
 
-        // Disable lighting after rendering
+        // 표면 렌더링 후 Disable Lighting 
         glDisable(GL_LIGHT0);
         glDisable(GL_LIGHTING);
 
-        // Render wireframe on top
-        glColor3f(0.0f, 0.0f, 0.0f); // Black color for wireframe
+        // 표면 위 WIREFRAME 렌더링
+        glColor3f(0.0f, 0.0f, 0.0f); 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        // Enable polygon offset to avoid z-fighting
+       // https://learn.microsoft.com/ko-kr/windows/win32/opengl/glpolygonoffset
+       // 표면 위에 그리기 위해 필요??? -> WIREFRAME only인 경우 필요 X
         glEnable(GL_POLYGON_OFFSET_LINE);
         glPolygonOffset(-1.0f, -1.0f);
 
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glDisableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_VERTEX_ARRAY); //On
+
+        glVertexPointer(3, GL_FLOAT, 0, &revolvedPoints[0]); //회전 결과 점 위치값 전달
+
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, &indices[0]); //실제 화면에 출력(Draw)
+
+        glDisableClientState(GL_VERTEX_ARRAY); //Off
 
         glDisable(GL_POLYGON_OFFSET_LINE);
     }
     else if (renderMode == WIREFRAME) {
-        glDisable(GL_LIGHTING); // Disable lighting for wireframe
-        // Render wireframe
-        glColor3f(0.0f, 0.0f, 0.0f); // Black color for wireframe
+        glDisable(GL_LIGHTING); // 표면 렌더링 없으므로 lighting 필요없음
+
+        // WIREFRAME 렌더링: SHADE 코드 하단부와 유사: GL_POLYGON_OFFSET_LINE만 제외
+        glColor3f(0.0f, 0.0f, 0.0f); 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -336,7 +346,8 @@ void display() {
     // Set up perspective projection for 3D rendering
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(30.0, (double)windowWidth / (double)windowHeight, 0.1, 1000.0); // Increase far clipping plane
+    //gluPerspective(30.0, (double)windowWidth / (double)windowHeight, 0.1, 100.0);
+    gluPerspective(30.0, (double)windowWidth / (double)windowHeight, 0.1, 1000.0); //plane 멀리
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -348,9 +359,10 @@ void display() {
     glDisable(GL_LIGHTING); // Disable lighting for axes
     drawAxes();
 
-    // Now apply model transformations
+    // 모델 변환 적용: resultShown On: Rotation, resultShown Off: Points Input
     glPushMatrix();
     if (resultShown) {
+        // angle은 motionCallback을 통해 업데이트
         glRotatef(angle, 0.0f, 1.0f, 0.0f);
     }
 
@@ -465,14 +477,16 @@ void keyboardCallback(unsigned char key, int x, int y) {
 
 // Mouse callback function
 void mouseCallback(int button, int state, int x, int y) {
-    if (degreeInputMode) return; // Ignore mouse events during degree input
+    if (degreeInputMode) return; // 각도 입력 시에는 점 입력 X
 
     if (button == GLUT_LEFT_BUTTON) {
         if (state == GLUT_DOWN) {
             if (!resultShown) {
-                // Read the projection and modelview matrix
-                GLdouble modelview[16], projection[16];
+                // 현재 projection, modelview, viewport 정보 받아오기
+                GLdouble modelview[16];
+                GLdouble projection[16];
                 GLint viewport[4];
+
                 glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
                 glGetDoublev(GL_PROJECTION_MATRIX, projection);
                 glGetIntegerv(GL_VIEWPORT, viewport);
@@ -491,21 +505,21 @@ void mouseCallback(int button, int state, int x, int y) {
                 glutPostRedisplay();
             }
             else {
-                // Begin rotation
+                //회전 On
                 moving = 1;
                 startX = x;
             }
         }
         else if (state == GLUT_UP) {
             if (resultShown) {
-                // End rotation
+                //회전 Off
                 moving = 0;
             }
         }
     }
-    else if ((button == 3) || (button == 4)) // Mouse wheel event (requires freeglut)
+    else if ((button == 3) || (button == 4)) // Mouse wheel event 
     {
-        if (state == GLUT_UP) return; // Disregard redundant GLUT_UP events
+        if (state == GLUT_UP) return; // 중복 GLUT_UP 인풋 무시
 
         if (button == 3) { // Scroll up
             cameraDistance -= 0.5;
@@ -518,10 +532,13 @@ void mouseCallback(int button, int state, int x, int y) {
     }
 }
 
-// Motion callback function for mouse movement
+// 마우스 움직임을 통한 회전: startX는 mouseCallback func에서 전달
 void motionCallback(int x, int y) {
     if (moving) {
+        //startX var는 mousecallback에서 좌클릭 시 변화
+        //현재 angle에 기존 startX - start X 더해주고
         angle += (x - startX);
+        //startX 업데이트
         startX = x;
         glutPostRedisplay();
     }
@@ -534,7 +551,7 @@ void menuCallback(int option) {
         if (!initialPoints.empty()) {
             degreeInputMode = true;
             degreeInput.clear();
-            glutPostRedisplay(); // Force redisplay to show the prompt
+            glutPostRedisplay(); 
         }
         else {
             std::cerr << "Please input points before setting the degree.\n";

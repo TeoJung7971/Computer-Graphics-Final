@@ -391,7 +391,7 @@ void drawGroundPlane() {
 // Generate the map
 void generatemap() {
 
-    //Prompt에 Phase 바뀔 떄 *한번 씩만* 현재 페이즈 출력하기 위해 사용
+    //Prompt에 Phase 바뀔 떄 '한번 씩만' 현재 페이즈 출력하기 위해 사용
     static bool firstTime_0 = true;
     static bool firstTime_1 = true;
     static bool firstTime_2 = true;
@@ -404,7 +404,9 @@ void generatemap() {
                 glTranslatef((mapj + 0.5f), -0.2f, -1 * (mapi + 0.5f));
 
                 if (collectedCount == 0) {
-                    // Phase 0: White cubes, no lighting/texture
+                    // Phase 0: WIREFRAME과 비슷한 appearance, LIGHTING OFF
+                    // hidden surface -> ?
+                    // 흰색으로 색상 설정: 맵 규모 작기 때문에 가능
                     if (firstTime_0) {
                         printf("첫 번째 페이즈가 시작됐습니다.\n");
                         firstTime_0 = false;
@@ -438,7 +440,7 @@ void generatemap() {
 
                 }
                 else if (collectedCount == 1) {
-                    // Phase 1: Light-green cubes without lighting
+                    // Phase 1: 초록색, LIGHTING은 OFF
                     if (firstTime_1) {
                         printf("첫 번째 오브젝트를 획득했습니다.\n");
                         printf("두 번째 페이즈가 시작됩니다.\n");
@@ -462,7 +464,7 @@ void generatemap() {
 
                     glDisable(GL_POLYGON_OFFSET_FILL);
 
-                    glColor3ub(0, 0, 0);
+                    glColor3ub(0, 0, 0); //WIREFRAME은 검정색으로
                     glLineWidth(3.0f);
                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                     glutSolidCube(1);
@@ -662,7 +664,9 @@ void display() {
     static bool last_phase = true;
 
     if (collectedCount >= (int)objects.size()) {
-        // Final phase: black background and rotating cube
+        // Final phase: 흰색 배경에 빛나는 큐브
+        // 클릭시 프로그램 종료
+        // 미로 및 object 렌더링 하지 않음
         if (last_phase) {
             printf("모든 오브젝틀 획득하고 맵을 완성했습니다!\n");
             printf("빛나는 큐브를 클릭하면 게임이 종료됩니다.");
@@ -696,7 +700,8 @@ void display() {
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
 
-        //모니터 해상도에 따라 속도 변화?
+        //모니터 해상도에 따라 속도 변화
+        // 이유?
         cubeRotation += 0.1f;
         if (cubeRotation > 360.0f) cubeRotation -= 360.0f;
 
@@ -706,13 +711,14 @@ void display() {
         glutPostRedisplay();
     }
     else {
-        // Before final phase: Map and the objects
+        // Before final phase: 미로와 오브젝트 렌더링 진행
+        // window 설정
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         gluPerspective(80, (double)windowWidth / (double)windowHeight, 0.1, 1000);
-
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
+        // angle은 kwyboardCallback 통해 조정: 시야 전환
         gluLookAt(gx, 0.5, gz, gx + sin(angle), 0.5, gz - cos(angle), 0, 1, 0);
 
         if (collectedCount == ((int)objects.size() - 1) || collectedCount == 2) {
@@ -726,7 +732,9 @@ void display() {
         // Draw maze: call generatemap()
         generatemap();
 
-        //Draw objects
+        //Draw objects: collectedCount < object.size()일 경우에만
+        //obj 1, 2, 3은 modeler로 생성된 데이터 사용
+        //obj 4는 practice에서 다룬 큐브 사용: final phase의 큐브와 동일
         for (size_t i = 0; i < objects.size(); ++i) {
             if (!objects[i].collected) {
                 glPushMatrix();
@@ -777,7 +785,7 @@ void display() {
                     glVertexPointer(3, GL_FLOAT, 0, MyVertices);
                     glColorPointer(3, GL_FLOAT, 0, MyColors);
 
-                    GLfloat emission[] = { 0.3f, 0.3f, 0.3f, 1.0f }; // Adjust the intensity (R, G, B, Alpha)
+                    GLfloat emission[] = { 0.3f, 0.3f, 0.3f, 1.0f }; // (R, G, B, Alpha)
                     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 
                     glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, MyVertexList);
