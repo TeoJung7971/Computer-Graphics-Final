@@ -144,7 +144,7 @@ bool loadOBJ(const char* filename, std::vector<float>& vertices, std::vector<uns
     return true;
 }
 
-// Function to show the characters on window
+// 문자 화면 상 출력
 void renderBitmapString(float x, float y, void* font, const char* string) {
     const char* c;
     glRasterPos2f(x, y);
@@ -153,10 +153,13 @@ void renderBitmapString(float x, float y, void* font, const char* string) {
     }
 }
 
-// Function to draw a textured cube, now taking a textureID as parameter
+// 텍스처가 적용된 큐브 DRAW
+// loadWallTexture()에서 load한 텍스처 이미지 사용
+// 이때, 두 가지의 다른 텍스처 존재 (phase 2 and 3)
 void drawTexturedCube(float size, GLuint texID) {
     float halfSize = size / 2.0f;
-
+    
+    //loadWallTexture에서 획득
     glBindTexture(GL_TEXTURE_2D, texID);
 
     // Front face
@@ -541,6 +544,8 @@ GLuint loadWallTexture(const char* filename) {
     glGenTextures(1, &texID);
     glBindTexture(GL_TEXTURE_2D, texID);
 
+    //stb 참조
+    // https://github.com/nothings/stb/tree/master
     GLenum format = GL_RGB;
     if (nrChannels == 1)
         format = GL_LUMINANCE;
@@ -882,7 +887,7 @@ void specialkeys(int key, int x, int y) {
 
     float nx = gx;
     float nz = gz;
-    float fraction = 0.15f;
+    float fraction = 0.15f; //속도 조절
     const float collisionRadius = 0.22f; //충돌 감지 범위 조절 parameter: 0.2이하에서는 map 내부 보이는 현상 발생
 
     switch (key) {
@@ -906,6 +911,9 @@ void specialkeys(int key, int x, int y) {
     int mj = (int)(floor(nx));
 
     bool canMove = true;
+
+    // 충돌 체크
+    // 미로 값 == 1일 경우와 좌표 동일히면 canMove == False
     for (int i = -1; i <= 1; ++i) {
         for (int j = -1; j <= 1; ++j) {
             int checkMi = mi + i;
