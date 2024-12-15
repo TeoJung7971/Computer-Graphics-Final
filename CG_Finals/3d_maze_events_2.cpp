@@ -19,7 +19,7 @@ using namespace std;
 // Maze data
 //0 = Empty
 //1 = Wall
-//N(N>1) = Objects
+//2, 3, 4, 5 = Objects
 
 const int map[20][20] = {
     {1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1},
@@ -221,7 +221,7 @@ void drawTexturedCube(float size, GLuint texID) {
 #define GL_CLAMP_TO_EDGE 0x812F
 #endif
 
-// Generic skybox loader (for Phase 2 and Phase 3)
+// SKybox LOAD (Phase 2 and Phase 3)
 void loadSkyboxTextures(GLuint* skyboxTexArray, const char* right, const char* left, const char* top, const char* bottom, const char* front, const char* back) {
     const char* filenames[6] = { right, left, top, bottom, front, back };
 
@@ -252,7 +252,7 @@ void loadSkyboxTextures(GLuint* skyboxTexArray, const char* right, const char* l
     }
 }
 
-// Draw skybox according to current phase
+// skybox DRAW
 void drawSkybox() {
     glPushAttrib(GL_ENABLE_BIT);
     glDisable(GL_LIGHTING);
@@ -262,7 +262,7 @@ void drawSkybox() {
     glColor3f(1.0f, 1.0f, 1.0f);
     float size = 50.0f;
 
-    // Choose skybox textures based on phase
+    // Phase 2와 3에 적용되는 텍스처 다름
     GLuint* currentSkybox;
     if (collectedCount == 2) {
         currentSkybox = skyboxTextures_Phase2;
@@ -272,7 +272,7 @@ void drawSkybox() {
     }
 
     glPushMatrix();
-    // Center skybox at player's position
+    // 현재 위치 중심 설정
     glTranslatef(gx, 0.5f, gz);
 
     // Right
@@ -335,7 +335,7 @@ void drawSkybox() {
     glPopAttrib();
 }
 
-// Generic function to load a grass texture
+// grass texture LOAD
 GLuint loadGrassTexture(const char* filename) {
     int width, height, nrChannels;
     unsigned char* data = stbi_load(filename, &width, &height, &nrChannels, 0);
@@ -364,13 +364,12 @@ GLuint loadGrassTexture(const char* filename) {
     return texID;
 }
 
-// Draw infinite ground plane according to current phase
+// ground DRAW
 void drawGroundPlane() {
     glPushAttrib(GL_ENABLE_BIT);
     glDisable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
 
-    // NEW: Choose grass texture based on phase
     GLuint currentGrassTex = (collectedCount == 2) ? grassTextureID_Phase2 : grassTextureID_Phase3;
 
     glBindTexture(GL_TEXTURE_2D, currentGrassTex);
@@ -885,12 +884,14 @@ void specialkeys(int key, int x, int y) {
         return;
     }
 
+    //new x, z from current x, z
     float nx = gx;
     float nz = gz;
     float fraction = 0.15f; //속도 조절
     const float collisionRadius = 0.22f; //충돌 감지 범위 조절 parameter: 0.2이하에서는 map 내부 보이는 현상 발생
 
     switch (key) {
+        // new x, z 업데이트
     case GLUT_KEY_UP:
         nx += fraction * sin(angle);
         nz -= fraction * cos(angle);
@@ -907,6 +908,7 @@ void specialkeys(int key, int x, int y) {
         break;
     }
 
+    // new x, z 정수화: 미로 충돌 체크 위해
     int mi = (int)(floor(-nz));
     int mj = (int)(floor(nx));
 
@@ -916,17 +918,22 @@ void specialkeys(int key, int x, int y) {
     // 미로 값 == 1일 경우와 좌표 동일히면 canMove == False
     for (int i = -1; i <= 1; ++i) {
         for (int j = -1; j <= 1; ++j) {
+            // 검사 범위 (-1, 0, 1): 3칸 -> 늘려도?
             int checkMi = mi + i;
             int checkMj = mj + j;
 
+            //미로 전체 돌며 1 여부 체크
             if (checkMi >= 0 && checkMi < 20 && checkMj >= 0 && checkMj < 20) {
                 int cellValue = map[checkMi][checkMj];
                 if (cellValue == 1) {
+                    // 벽(큐브) 중심 계산
                     float cellCenterX = checkMj + 0.5f;
                     float cellCenterZ = -checkMi - 0.5f;
+                    // 중심으로부터 플레이어의 거리 계산
                     float dx = nx - cellCenterX;
                     float dz = nz - cellCenterZ;
                     float distance = sqrt(dx * dx + dz * dz);
+                    // dist가 threshold 밑으로 떨어지면 move != 1
                     if (distance < (collisionRadius + 0.5f)) {
                         canMove = false;
                         printf("충돌 발생!\n");

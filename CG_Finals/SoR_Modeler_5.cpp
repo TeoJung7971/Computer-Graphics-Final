@@ -14,20 +14,20 @@ struct Point3D {
     float x, y, z;
 };
 
-// Global variables
-std::vector<Point3D> initialPoints;    // Input points
-std::vector<Point3D> revolvedPoints;   // Revolved points for the surface
-std::vector<Point3D> normals;          // Normals for each vertex
-std::vector<unsigned int> indices;     // Indices for constructing polygons
+// 전역 변수
+std::vector<Point3D> initialPoints; // 입력 points
+std::vector<Point3D> revolvedPoints;// 회전된(결과) points
+std::vector<Point3D> normals; // Normal vector-> 각 polygon에 지정
+std::vector<unsigned int> indices; // polygons(in this case triangle) 구성 인데스: 연결 순서
 
-int degree = 0;                        // Degree for revolution
-bool degreeInputMode = false;          // Degree input mode flag
-std::string degreeInput = "";          // Temporary string for degree input
+int degree = 0; // 회전각
+bool degreeInputMode = false; //각도 입력 여부 Flag
+std::string degreeInput = "";  
 
-GLsizei windowWidth = 800, windowHeight = 600; // Window dimensions
-bool resultShown = false;              // Flag to track if revolution result is shown
+GLsizei windowWidth = 800, windowHeight = 600; // 윈도우 초기 크기
+bool resultShown = false; // 결과 출력 여부 Flag
 
-double cameraDistance = 5.0;           // Camera distance for zooming
+double cameraDistance = 5.0; //카메라 거리: Zoom In/Out에 사용
 
 // Rendering mode 선택: 기본은 wireframe으로
 enum RenderMode { WIREFRAME, SHADE };
@@ -62,7 +62,7 @@ void reset() {
     angle = 0.0f; // Reset rotation angle
 }
 
-// Function to generate a unique filename
+// 파일 이름 생성: ctime.h
 std::string generateFilename() {
     std::ostringstream filename;
     filename << "revolved_object_" << std::time(nullptr) << ".obj";
@@ -84,7 +84,7 @@ void revolvePoints() {
     int steps = 360 / degree;
     float radiansInterval = degree * M_PI / 180.0f; //각도 계산을 위해 radian으로 변환
 
-    // Generate vertices for the revolved surface
+    // SoR model vertex 생성
     for (const auto& point : initialPoints) {
         // steps = 360 / degree
         for (int s = 0; s < steps; ++s) {
@@ -122,7 +122,7 @@ void revolvePoints() {
         }
     }
 
-    // Generate indices for the triangles
+    // WIREFRAME 출력, 및 polygon(삼각형)으로 연결하기 위해 index 지정
     int totalRings = initialPoints.size();
     int pointsPerRing = steps;
 
@@ -147,7 +147,7 @@ void revolvePoints() {
         }
     }
 
-    // Initialize normals
+    // NV 초기화
     normals.resize(revolvedPoints.size(), { 0.0f, 0.0f, 0.0f });
 
     // Compute normals
@@ -160,7 +160,7 @@ void revolvePoints() {
         Point3D v1 = revolvedPoints[idx1];
         Point3D v2 = revolvedPoints[idx2];
 
-        // Compute the normal using cross product
+        // NV 계산: 외적 연산 수행
         float ux = v1.x - v0.x;
         float uy = v1.y - v0.y;
         float uz = v1.z - v0.z;
@@ -173,7 +173,7 @@ void revolvePoints() {
         float ny = uz * vx - ux * vz;
         float nz = ux * vy - uy * vx;
 
-        // Accumulate normals
+        // NV 합치기
         normals[idx0].x += nx;
         normals[idx0].y += ny;
         normals[idx0].z += nz;
@@ -187,7 +187,7 @@ void revolvePoints() {
         normals[idx2].z += nz;
     }
 
-    // Normalize the normals
+    // 정규화
     for (auto& n : normals) {
         float length = sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
         if (length > 0.0f) {
@@ -200,7 +200,7 @@ void revolvePoints() {
     resultShown = true;
 }
 
-// Function to save revolved points in OBJ format
+// OBJ 파일 형식으로 저장
 void saveOBJFile() {
     std::ofstream outFile(generateFilename());
     if (outFile.is_open()) {
@@ -230,10 +230,9 @@ void saveOBJFile() {
     }
 }
 
-// Function to draw X, Y, Z axes spanning the screen
 void drawAxes() {
-    glDisable(GL_LIGHTING); // Disable lighting for axes
-    glColor3f(0.0f, 0.0f, 0.0f); // Black color for axes
+    glDisable(GL_LIGHTING); 
+    glColor3f(0.0f, 0.0f, 0.0f); 
 
     glBegin(GL_LINES);
 
@@ -254,8 +253,8 @@ void drawAxes() {
 
 // 처음 입력받은 점 렌더링
 void renderInitialPoints() {
-    glDisable(GL_LIGHTING); // Disable lighting for initial points
-    glColor3f(0.0f, 0.0f, 1.0f); // Deep blue color for points
+    glDisable(GL_LIGHTING); // Disable LIGHTING
+    glColor3f(0.0f, 0.0f, 1.0f); // 어두운 파란색
     glPointSize(8.0f);
     glBegin(GL_POINTS);
     for (const auto& p : initialPoints) {
@@ -635,7 +634,7 @@ int main(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboardCallback);
     glutMouseFunc(mouseCallback);
-    glutMotionFunc(motionCallback); // Add motion callback for rotation
+    glutMotionFunc(motionCallback); 
 
     // Wirefram vs Surface
     int renderingMenu = glutCreateMenu(menuCallback);
